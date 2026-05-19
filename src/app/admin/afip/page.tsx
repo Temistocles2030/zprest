@@ -21,6 +21,23 @@ export default function AdminAFIPPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AFIPPersona | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [certStatus, setCertStatus] = useState<Record<string, string> | null>(null);
+  const [loadingCert, setLoadingCert] = useState(false);
+
+  const checkCert = async () => {
+    setLoadingCert(true);
+    try {
+      const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
+      const res = await fetch("/api/admin/afip/status", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      setCertStatus(await res.json());
+    } catch {
+      setCertStatus({ error: "No se pudo obtener el estado del certificado" });
+    } finally {
+      setLoadingCert(false);
+    }
+  };
 
   const handleSearch = async () => {
     const clean = cuit.replace(/\D/g, "");
@@ -62,6 +79,35 @@ export default function AdminAFIPPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Consulta AFIP</h1>
         <p className="mt-1 text-sm text-gray-400">Padrón de Contribuyentes — ws_sr_padron_a13</p>
+      </div>
+
+      {/* Diagnóstico certificado */}
+      <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-300">🔐 Estado del certificado AFIP</h2>
+          <button
+            onClick={checkCert}
+            disabled={loadingCert}
+            className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
+          >
+            {loadingCert ? "Verificando..." : "Verificar →"}
+          </button>
+        </div>
+        {certStatus && (
+          <div className="space-y-1.5 text-xs font-mono">
+            {Object.entries(certStatus).map(([k, v]) => (
+              <div key={k} className="flex gap-2">
+                <span className="text-gray-500 min-w-[180px]">{k}:</span>
+                <span className={String(v).startsWith("❌") ? "text-red-400" : String(v).startsWith("✅") ? "text-green-400" : "text-gray-300"}>
+                  {String(v)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {!certStatus && (
+          <p className="text-xs text-gray-500">Hacé click en "Verificar" para ver si el certificado es válido o está vencido.</p>
+        )}
       </div>
 
       {/* Formulario */}

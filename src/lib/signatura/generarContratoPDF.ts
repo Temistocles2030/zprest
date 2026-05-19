@@ -9,11 +9,16 @@ import type { DatosContratoPersonal, DatosContratoComercial } from "./generarCon
 const MARGIN = 72;
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
+const HEADER_H = 57;              // ≈2cm
+const FOOTER_H = 57;              // ≈2cm
+const LOGO_W = 40;
+const TOP_MARGIN = HEADER_H + 15; // content top = 72pt
+const BOT_MARGIN = FOOTER_H + 15; // content bottom offset = 72pt
 const CONTENT_W = PAGE_W - 2 * MARGIN;
+const CONTENT_BOTTOM = PAGE_H - BOT_MARGIN;
 const FS = 10;
 const FS_SM = 8;
 const ROW_H = 15;
-const LOGO_SIZE = 55;
 const LOGO_PATH = join(process.cwd(), "public/contratos/zprest.png");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -80,24 +85,56 @@ function bancoDesdesCBU(cbu: string): string {
 
 function pdfBuffer(builder: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
   return new Promise((resolve, reject) => {
+    let pageNum = 0;
+
     const doc = new PDFDocument({
       size: "A4",
-      margins: { top: MARGIN + LOGO_SIZE + 8, bottom: MARGIN, left: MARGIN, right: MARGIN },
+      margins: { top: TOP_MARGIN, bottom: BOT_MARGIN, left: MARGIN, right: MARGIN },
     });
     const parts: Buffer[] = [];
     doc.on("data", (c: Buffer) => parts.push(c));
     doc.on("end", () => resolve(Buffer.concat(parts)));
     doc.on("error", reject);
 
-    const addLogo = () => {
+    const drawPageDecorations = () => {
+      pageNum++;
+      const savedX = doc.x;
+      const savedY = doc.y;
+
+      doc.save();
+
+      // ── Header band ───────────────────────────────────────────────────
+      doc.rect(0, 0, PAGE_W, HEADER_H).fill("#f7f7f7");
+      doc.strokeColor("#dddddd").lineWidth(0.5)
+        .moveTo(0, HEADER_H).lineTo(PAGE_W, HEADER_H).stroke();
+
+      const logoY = (HEADER_H - LOGO_W) / 2;
       try {
-        // Logo centrado en el encabezado de cada página
-        doc.image(LOGO_PATH, (PAGE_W - LOGO_SIZE) / 2, 18, { width: LOGO_SIZE });
-      } catch { /* logo opcional — no interrumpe la generación */ }
+        doc.image(LOGO_PATH, MARGIN, logoY, { width: LOGO_W });
+      } catch { /* logo opcional */ }
+
+      const nameX = MARGIN + LOGO_W + 10;
+      const nameW = PAGE_W - nameX - MARGIN;
+      doc.fillColor("#222222").font("Helvetica-Bold").fontSize(8.5)
+        .text("ZAYIN SERVICIOS FINANCIEROS S.A.S.", nameX, logoY + 4, { width: nameW, lineBreak: false });
+      doc.fillColor("#777777").font("Helvetica").fontSize(7.5)
+        .text("zprest.com.ar", nameX, logoY + 18, { width: nameW, lineBreak: false });
+
+      // ── Footer band ───────────────────────────────────────────────────
+      const footerY = PAGE_H - FOOTER_H;
+      doc.rect(0, footerY, PAGE_W, FOOTER_H).fill("#f7f7f7");
+      doc.strokeColor("#dddddd").lineWidth(0.5)
+        .moveTo(0, footerY).lineTo(PAGE_W, footerY).stroke();
+      doc.fillColor("#777777").font("Helvetica").fontSize(7.5)
+        .text(`Página ${pageNum}`, 0, footerY + (FOOTER_H - 8) / 2, { width: PAGE_W, align: "center", lineBreak: false });
+
+      doc.restore();
+      doc.x = savedX;
+      doc.y = savedY;
     };
 
-    addLogo(); // primera página (no dispara pageAdded)
-    doc.on("pageAdded", addLogo);
+    drawPageDecorations(); // primera página (no dispara pageAdded)
+    doc.on("pageAdded", drawPageDecorations);
 
     builder(doc);
     doc.end();
@@ -160,13 +197,13 @@ function drawComercialTable(doc: PDFKit.PDFDocument, rows: ComercialRow[]) {
   };
 
   let y = doc.y;
-  if (y + ROW_H * 3 > PAGE_H - MARGIN) { doc.addPage(); y = MARGIN; }
+  if (y + ROW_H * 3 > CONTENT_BOTTOM) { doc.addPage(); y = TOP_MARGIN; }
 
   drawRow(y, headers, true);
   y += ROW_H;
 
   for (const row of rows) {
-    if (y + ROW_H > PAGE_H - MARGIN) { doc.addPage(); y = MARGIN; }
+    if (y + ROW_H > CONTENT_BOTTOM) { doc.addPage(); y = TOP_MARGIN; }
     drawRow(y, [row.n, row.fecha, row.capital, row.interes, row.total, row.saldo]);
     y += ROW_H;
   }
@@ -202,18 +239,18 @@ function drawAmortTable(doc: PDFKit.PDFDocument, rows: AmortRow[]) {
   let y = doc.y;
 
   // Page break if less than header + 2 rows fit
-  if (y + ROW_H * 3 > PAGE_H - MARGIN) {
+  if (y + ROW_H * 3 > CONTENT_BOTTOM) {
     doc.addPage();
-    y = MARGIN;
+    y = TOP_MARGIN;
   }
 
   drawRow(y, headers, true);
   y += ROW_H;
 
   for (const row of rows) {
-    if (y + ROW_H > PAGE_H - MARGIN) {
+    if (y + ROW_H > CONTENT_BOTTOM) {
       doc.addPage();
-      y = MARGIN;
+      y = TOP_MARGIN;
     }
     drawRow(y, [row.fecha_vto, row.cuota_sin_iva, row.interes, row.amortiz, row.saldo, row.iva, row.cuota_pagar]);
     y += ROW_H;
@@ -478,7 +515,8 @@ export async function generarContratoComercialPDF(datos: DatosContratoComercial)
   const comercialRows: ComercialRow[] = [];
   let saldoRestante = datos.monto;
   for (let i = 0; i < n; i++) {
-    const fechaDia = new Date(primerFecha.getTime() + i * 24 * 60 * 60 * 1000);
+    const rawDate = new Date(primerFecha.getTime() + i * 24 * 60 * 60 * 1000);
+    const fechaDia = rawDate.getDay() === 0 ? new Date(rawDate.getTime() + 24 * 60 * 60 * 1000) : rawDate;
     const capitalEste = i === n - 1 ? saldoRestante : capitalDiario;
     saldoRestante = Math.max(0, saldoRestante - capitalEste);
     comercialRows.push({

@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/admin/ziro", label: "Ziro IA", icon: "🤖" },
   { href: "/admin/sms", label: "SMS", icon: "📱" },
   { href: "/admin/arrepentimientos", label: "Arrepentimientos", icon: "↩️" },
+  { href: "/admin/docs", label: "Documentación", icon: "📚" },
 ];
 
 export default function AdminNav() {

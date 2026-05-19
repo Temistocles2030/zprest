@@ -42,18 +42,16 @@ function signTRA(traXml: string, certPem: string, keyPem: string): string {
   const cert = forge.pki.certificateFromPem(certPem);
   const privateKey = forge.pki.privateKeyFromPem(keyPem);
 
+  // AFIP requiere SHA-1 y no acepta authenticatedAttributes en el CMS
+  // El contenido debe convertirse a binary string antes de pasarlo a node-forge
   const p7 = forge.pkcs7.createSignedData();
-  p7.content = forge.util.createBuffer(traXml, "utf8");
+  p7.content = forge.util.createBuffer(Buffer.from(traXml, "utf8").toString("binary"));
   p7.addCertificate(cert);
   p7.addSigner({
     key: privateKey,
     certificate: cert,
     digestAlgorithm: forge.pki.oids.sha1,
-    authenticatedAttributes: [
-      { type: forge.pki.oids.contentType, value: forge.pki.oids.data },
-      { type: forge.pki.oids.messageDigest },
-      { type: forge.pki.oids.signingTime, value: new Date() as unknown as string },
-    ],
+    authenticatedAttributes: [],
   });
   p7.sign();
 
@@ -104,6 +102,8 @@ export async function getLoginTicket(service: string): Promise<{ token: string; 
   if (cached && cached.expiresAt > new Date()) {
     return { token: cached.token, sign: cached.sign };
   }
+  // Limpiar cache expirado
+  delete ticketCache[service];
 
   const { certPem, keyPem } = getCredentials();
   const traXml = buildTRA(service);

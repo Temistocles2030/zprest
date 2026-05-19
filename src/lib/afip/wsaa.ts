@@ -13,8 +13,8 @@ function getCredentials() {
     throw new Error("AFIP_CERT_BASE64 y AFIP_KEY_BASE64 deben estar configurados");
   }
 
-  const certPem = Buffer.from(certBase64, "base64").toString("utf-8");
-  const keyPem = Buffer.from(keyBase64, "base64").toString("utf-8");
+  const certPem = Buffer.from(certBase64.trim(), "base64").toString("utf-8");
+  const keyPem = Buffer.from(keyBase64.trim(), "base64").toString("utf-8");
 
   return { certPem, keyPem };
 }

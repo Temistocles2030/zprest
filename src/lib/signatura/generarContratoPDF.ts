@@ -216,7 +216,7 @@ function drawComercialTable(doc: PDFKit.PDFDocument, rows: ComercialRow[]) {
 
   for (const row of rows) {
     if (y + ROW_H > CONTENT_BOTTOM) { doc.addPage(); y = TOP_MARGIN; }
-    drawRow(y, [row.n, row.fecha, row.capital, row.interes, row.total, row.saldo]);
+    drawRow(y, [row.n, row.fecha, row.capital, row.interes, row.total, row.saldo], true);
     y += ROW_H;
   }
 
@@ -264,7 +264,7 @@ function drawAmortTable(doc: PDFKit.PDFDocument, rows: AmortRow[]) {
       doc.addPage();
       y = TOP_MARGIN;
     }
-    drawRow(y, [row.fecha_vto, row.cuota_sin_iva, row.interes, row.amortiz, row.saldo, row.iva, row.cuota_pagar]);
+    drawRow(y, [row.fecha_vto, row.cuota_sin_iva, row.interes, row.amortiz, row.saldo, row.iva, row.cuota_pagar], true);
     y += ROW_H;
   }
 
@@ -584,10 +584,10 @@ export async function generarContratoComercialPDF(datos: DatosContratoComercial)
       `El prestamo devengara intereses compensatorios calculados diariamente. La Tasa Nominal Anual (TNA) aplicada es del **${pct(tna)}**, lo que equivale a una Tasa Efectiva Diaria (TED) de aproximadamente **${pct(ted)}**. En base a esta ultima, la Tasa Efectiva Anual (TEA) resultante asciende al **${pct(tea)}**. El Costo Financiero Total Efectivo Anual (CFTEA) para el presente prestamo es del **${pct(cftea)}**, e incluye todos los intereses, el IVA sobre los intereses devengados y los gastos administrativos aplicables.`
     );
     body(doc,
-      "Todos los pagos que deba efectuar EL SOLICITANTE en virtud de este contrato se realizaran en forma diaria mediante transferencia bancaria o mediante pago QR a la cuenta Mercado Pago de LA OTORGANTE. Bajo ninguna circunstancia el cobrador recibira dinero en efectivo; su funcion se limita a facilitar y verificar la realizacion del pago a traves de los medios electronicos mencionados."
+      "Todos los pagos que deba efectuar EL SOLICITANTE en virtud de este contrato se realizaran en forma diaria mediante transferencia bancaria o mediante pago QR a la cuenta Mercado Pago de LA OTORGANTE, o bien en el momento en que el cobrador de LA OTORGANTE concurra al domicilio comercial del SOLICITANTE. Bajo ninguna circunstancia el cobrador recibira dinero en efectivo; su funcion se limita a facilitar y verificar la realizacion del pago a traves de los medios electronicos mencionados."
     );
     body(doc,
-      "EL SOLICITANTE se obliga a mantener fondos suficientes en su cuenta o billetera para que, al momento de presentarse el cobrador, los pagos puedan hacerse efectivos sin demoras."
+      "EL SOLICITANTE se obliga a mantener fondos suficientes en su cuenta o billetera para que, al momento de presentarse el cobrador, los pagos puedan hacerse efectivos sin demoras. Se deja expresa constancia de que EL SOLICITANTE podra, si lo desea, anticipar o adelantar pagos voluntariamente, siempre respetando las fechas de vencimiento pactadas, utilizando los medios de pago establecidos por LA OTORGANTE (los cuales seran informados a traves de la pagina web de LA OTORGANTE u otros canales oficiales). En caso de que el SOLICITANTE opte por realizar pagos en forma voluntaria por su cuenta y ello genere gastos adicionales (por ejemplo, comisiones por el uso de ciertos medios de pago), dichos gastos seran asumidos exclusivamente por EL SOLICITANTE."
     );
     gap(doc);
 

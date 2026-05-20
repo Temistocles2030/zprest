@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getAuthToken } from "@/lib/supabase/getToken";
 import { calcularCuotaDiariaComercial, formatearPesos } from "@/lib/loan-calculator";
+import { LOCALIDADES } from "@/lib/constants";
 import type { PlanSimulador } from "@/types";
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
@@ -638,22 +639,35 @@ export default function SolicitarPymePage() {
                       placeholder="A" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-yellow-500" />
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-300">Localidad</label>
-                  <input type="text" value={domLocalidad} onChange={e => setDomLocalidad(e.target.value)}
-                    placeholder="Neuquén" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-yellow-500" />
-                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-300">Provincia</label>
-                    <input type="text" value={domProvincia} onChange={e => setDomProvincia(e.target.value)}
-                      placeholder="Neuquén" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-yellow-500" />
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Localidad *</label>
+                    <select
+                      value={domLocalidad}
+                      onChange={e => {
+                        const sel = LOCALIDADES.find(l => l.nombre === e.target.value);
+                        setDomLocalidad(e.target.value);
+                        setDomProvincia(sel?.provincia ?? "");
+                      }}
+                      className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-yellow-500"
+                    >
+                      <option value="">Seleccioná...</option>
+                      {LOCALIDADES.map(l => (
+                        <option key={l.nombre} value={l.nombre}>{l.nombre}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-300">Código Postal</label>
-                    <input type="text" value={domCodPostal} onChange={e => setDomCodPostal(e.target.value)}
-                      placeholder="8300" inputMode="numeric" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-yellow-500" />
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Provincia</label>
+                    <div className="w-full rounded-lg border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-gray-300">
+                      {domProvincia || <span className="text-gray-600">—</span>}
+                    </div>
                   </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-300">Código Postal</label>
+                  <input type="text" value={domCodPostal} onChange={e => setDomCodPostal(e.target.value)}
+                    placeholder="8300" inputMode="numeric" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-yellow-500" />
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getAuthToken } from "@/lib/supabase/getToken";
 import { calcularCuotaPersonal, formatearPesos } from "@/lib/loan-calculator";
+import { LOCALIDADES } from "@/lib/constants";
 import type { PlanSimulador } from "@/types";
 
 const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
@@ -112,6 +113,10 @@ export default function SolicitarPersonalPage() {
   const [cuilPrefijo, setCuilPrefijo] = useState<"20" | "27">("20");
   const [empleador, setEmpleador] = useState("");
   const [profesion, setProfesion] = useState("");
+  const [domCalle, setDomCalle] = useState("");
+  const [domAltura, setDomAltura] = useState("");
+  const [domLocalidad, setDomLocalidad] = useState("");
+  const [domProvincia, setDomProvincia] = useState("");
   const [cbu, setCbu] = useState(() =>
     typeof window !== "undefined" ? sessionStorage.getItem("zprest_sol_p_cbu") || "" : ""
   );
@@ -159,6 +164,13 @@ export default function SolicitarPersonalPage() {
     setTelefono(prev => prev || usuario.telefono || "");
     setEmpleador(prev => prev || usuario.empleador || "");
     setProfesion(prev => prev || (usuario as any).profesion || "");
+    const dom = (usuario as any).domicilio;
+    if (dom && typeof dom === "object") {
+      setDomCalle(prev => prev || dom.calle || "");
+      setDomAltura(prev => prev || dom.altura || "");
+      setDomLocalidad(prev => prev || dom.localidad || "");
+      setDomProvincia(prev => prev || dom.provincia || "");
+    }
   }, [usuario?.id]);
 
   // Cargar plan preferencial si el usuario tiene uno asignado
@@ -265,11 +277,17 @@ export default function SolicitarPersonalPage() {
       if (archivos.some(a => a.uploading)) throw new Error("Esperá a que terminen de subir los archivos");
       const token = await getToken();
       if (!token) throw new Error("Sin sesión");
-      // Guardar empleador en el perfil del usuario
+      // Guardar empleador + domicilio en el perfil del usuario
+      const domicilio = (domCalle || domAltura || domLocalidad) ? {
+        calle: domCalle || null,
+        altura: domAltura || null,
+        localidad: domLocalidad || null,
+        provincia: domProvincia || null,
+      } : null;
       await fetch("/api/auth/perfil", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ empleador: empleador || null, profesion: profesion || null }),
+        body: JSON.stringify({ empleador: empleador || null, profesion: profesion || null, domicilio }),
       });
 
       const res = await fetch("/api/solicitudes", {
@@ -556,6 +574,49 @@ export default function SolicitarPersonalPage() {
                 className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-blue-500"
               />
             </div>
+
+            <div className="pt-1">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-400">Domicilio *</p>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Calle *</label>
+                    <input type="text" value={domCalle} onChange={e => setDomCalle(e.target.value)}
+                      placeholder="Av. San Martín" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Altura / Nro.</label>
+                    <input type="text" value={domAltura} onChange={e => setDomAltura(e.target.value)}
+                      placeholder="1234" className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-blue-500" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Localidad *</label>
+                    <select
+                      value={domLocalidad}
+                      onChange={e => {
+                        const sel = LOCALIDADES.find(l => l.nombre === e.target.value);
+                        setDomLocalidad(e.target.value);
+                        setDomProvincia(sel?.provincia ?? "");
+                      }}
+                      className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+                    >
+                      <option value="">Seleccioná...</option>
+                      {LOCALIDADES.map(l => (
+                        <option key={l.nombre} value={l.nombre}>{l.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-300">Provincia</label>
+                    <div className="w-full rounded-lg border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-gray-300">
+                      {domProvincia || <span className="text-gray-600">—</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -624,6 +685,7 @@ export default function SolicitarPersonalPage() {
                 ["DNI", dni],
                 ["CUIL", cuil || "—"],
                 ["Teléfono", telefono || "—"],
+                ["Domicilio", [domCalle, domAltura, domLocalidad, domProvincia].filter(Boolean).join(" ") || "—"],
                 ["Empleador", empleador || "—"],
                 ["CBU", cbu || "—"],
                 ["Banco", banco || "—"],
@@ -669,6 +731,7 @@ export default function SolicitarPersonalPage() {
   <tr><td>DNI</td><td>${dni || "—"}</td></tr>
   <tr><td>CUIL</td><td>${cuil || "—"}</td></tr>
   <tr><td>Teléfono</td><td>${telefono || "—"}</td></tr>
+  <tr><td>Domicilio</td><td>${[domCalle, domAltura, domLocalidad, domProvincia].filter(Boolean).join(" ") || "—"}</td></tr>
   <tr><td>Empleador</td><td>${empleador || "—"}</td></tr>
   <tr><td>CBU</td><td>${cbu || "—"}</td></tr>
   <tr><td>Documentos presentados</td><td>${archivos.filter(a => a.url).length} de ${DOCS.length}</td></tr>

@@ -81,6 +81,52 @@ export const BCRA_SITUACIONES = {
   6: { label: "Irrecuperable (disp. técnica)", color: "text-red-600", description: "Irrecuperable por disposición técnica" },
 } as const;
 
+// ─── Localidades (Neuquén + Río Negro adyacente) ──────────────────────────────
+export const LOCALIDADES: { nombre: string; provincia: string }[] = [
+  // Neuquén — principales
+  { nombre: "Neuquén", provincia: "Neuquén" },
+  { nombre: "Plottier", provincia: "Neuquén" },
+  { nombre: "Centenario", provincia: "Neuquén" },
+  { nombre: "Cutral Có", provincia: "Neuquén" },
+  { nombre: "Plaza Huincul", provincia: "Neuquén" },
+  { nombre: "Zapala", provincia: "Neuquén" },
+  { nombre: "San Martín de los Andes", provincia: "Neuquén" },
+  { nombre: "Villa La Angostura", provincia: "Neuquén" },
+  { nombre: "Junín de los Andes", provincia: "Neuquén" },
+  { nombre: "Aluminé", provincia: "Neuquén" },
+  { nombre: "Chos Malal", provincia: "Neuquén" },
+  { nombre: "Rincón de los Sauces", provincia: "Neuquén" },
+  { nombre: "Añelo", provincia: "Neuquén" },
+  { nombre: "San Patricio del Chañar", provincia: "Neuquén" },
+  { nombre: "Vista Alegre Norte", provincia: "Neuquén" },
+  { nombre: "Piedra del Águila", provincia: "Neuquén" },
+  { nombre: "Picún Leufú", provincia: "Neuquén" },
+  { nombre: "Las Lajas", provincia: "Neuquén" },
+  { nombre: "Loncopué", provincia: "Neuquén" },
+  { nombre: "El Huecú", provincia: "Neuquén" },
+  { nombre: "Andacollo", provincia: "Neuquén" },
+  { nombre: "Huinganco", provincia: "Neuquén" },
+  { nombre: "Caviahue-Copahue", provincia: "Neuquén" },
+  { nombre: "Villa Pehuenia", provincia: "Neuquén" },
+  { nombre: "Moquehue", provincia: "Neuquén" },
+  { nombre: "Buta Ranquil", provincia: "Neuquén" },
+  { nombre: "Las Coloradas", provincia: "Neuquén" },
+  { nombre: "Chorriaca", provincia: "Neuquén" },
+  { nombre: "Mariano Moreno", provincia: "Neuquén" },
+  { nombre: "Tricao Malal", provincia: "Neuquén" },
+  { nombre: "Villa El Chocón", provincia: "Neuquén" },
+  { nombre: "Octavio Pico", provincia: "Neuquén" },
+  { nombre: "Barrancas", provincia: "Neuquén" },
+  { nombre: "Senillosa", provincia: "Neuquén" },
+  { nombre: "San Cabao", provincia: "Neuquén" },
+  // Río Negro — zona de influencia
+  { nombre: "Cipolletti", provincia: "Río Negro" },
+  { nombre: "Allen", provincia: "Río Negro" },
+  { nombre: "General Roca", provincia: "Río Negro" },
+  { nombre: "Fernández Oro", provincia: "Río Negro" },
+  { nombre: "Cinco Saltos", provincia: "Río Negro" },
+];
+
 // ─── Formateo ─────────────────────────────────────────────────────────────────
 export function formatARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", {

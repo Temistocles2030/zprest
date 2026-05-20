@@ -173,7 +173,7 @@ export default function SolicitarPersonalPage() {
       setDomDepto(prev => prev || dom.depto || "");
       setDomLocalidad(prev => prev || dom.localidad || "");
       setDomProvincia(prev => prev || dom.provincia || "");
-      setDomCodPostal(prev => prev || dom.cod_postal || "");
+      setDomCodPostal(prev => prev || dom.cp || "");
     }
   }, [usuario?.id]);
 
@@ -288,7 +288,7 @@ export default function SolicitarPersonalPage() {
         depto: domDepto || null,
         localidad: domLocalidad || null,
         provincia: domProvincia || null,
-        cod_postal: domCodPostal || null,
+        cp: domCodPostal || null,
       } : null;
       await fetch("/api/auth/perfil", {
         method: "PATCH",

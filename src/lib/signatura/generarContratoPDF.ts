@@ -101,6 +101,14 @@ function pdfBuffer(builder: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> 
       const savedX = doc.x;
       const savedY = doc.y;
 
+      // Temporarily allow drawing outside the content area (header y<topMargin, footer y>maxY).
+      // Without this, doc.text() at footerY > page.maxY() triggers addPage() → infinite recursion.
+      const page = (doc as any).page;
+      const origTop = page.margins.top;
+      const origBottom = page.margins.bottom;
+      page.margins.top = 0;
+      page.margins.bottom = 0;
+
       doc.save();
 
       // ── Header band ───────────────────────────────────────────────────
@@ -129,6 +137,10 @@ function pdfBuffer(builder: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> 
         .text(`Página ${pageNum}`, 0, footerY + (FOOTER_H - 8) / 2, { width: PAGE_W, align: "center", lineBreak: false });
 
       doc.restore();
+
+      // Restore margins and cursor
+      page.margins.top = origTop;
+      page.margins.bottom = origBottom;
       doc.x = savedX;
       doc.y = savedY;
     };

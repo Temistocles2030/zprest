@@ -137,6 +137,7 @@ function pdfBuffer(builder: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> 
         .text(`Página ${pageNum}`, 0, footerY + (FOOTER_H - 8) / 2, { width: PAGE_W, align: "center", lineBreak: false });
 
       doc.restore();
+      doc.fillColor("#000000"); // reset after gray footer text
 
       // Restore margins and cursor
       page.margins.top = origTop;

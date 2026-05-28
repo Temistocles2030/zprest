@@ -99,8 +99,8 @@ export function useDeuda() {
 
       const proximoVencimiento =
         cs
-          .filter((c) => c.estado === "pendiente" && new Date(c.fecha_vencimiento) >= now)
-          .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())[0] ?? null;
+          .filter((c) => c.estado === "pendiente" && new Date(c.fecha_vencimiento + "T12:00:00") >= now)
+          .sort((a, b) => new Date(a.fecha_vencimiento + "T12:00:00").getTime() - new Date(b.fecha_vencimiento + "T12:00:00").getTime())[0] ?? null;
 
       setState({
         prestamos: ps,

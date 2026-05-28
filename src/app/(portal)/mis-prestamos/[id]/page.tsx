@@ -91,7 +91,7 @@ export default function DetallePrestamo({ params }: PageProps) {
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
               {cuotasDePrestamo.map((cuota) => {
-                const fecha = new Date(cuota.fecha_vencimiento);
+                const fecha = new Date(cuota.fecha_vencimiento + "T12:00:00");
                 const isPagada = cuota.estado === "pagada";
                 const isVencida = cuota.estado === "vencida";
 

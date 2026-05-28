@@ -38,7 +38,7 @@ function buildLoanContext(
     );
   });
   if (proximoVencimiento) {
-    const fecha = new Date(proximoVencimiento.fecha_vencimiento).toLocaleDateString("es-AR");
+    const fecha = new Date(proximoVencimiento.fecha_vencimiento + "T12:00:00").toLocaleDateString("es-AR");
     lines.push(`Próximo vencimiento: ${formatearPesos(proximoVencimiento.monto)} el ${fecha}`);
   }
   return lines.join("\n");

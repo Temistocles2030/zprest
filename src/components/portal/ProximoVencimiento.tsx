@@ -20,7 +20,7 @@ export default function ProximoVencimiento() {
   const useMock = !loading && prestamos.length === 0;
 
   const monto  = useMock ? MOCK_PROXIMO.monto  : proximoVencimiento?.monto ?? null;
-  const fecha  = useMock ? MOCK_PROXIMO.fecha  : proximoVencimiento?.fecha_vencimiento ? new Date(proximoVencimiento.fecha_vencimiento) : null;
+  const fecha  = useMock ? MOCK_PROXIMO.fecha  : proximoVencimiento?.fecha_vencimiento ? new Date(proximoVencimiento.fecha_vencimiento + "T12:00:00") : null;
   const estado = useMock ? MOCK_PROXIMO.estado : proximoVencimiento?.estado;
   const numero = useMock ? MOCK_PROXIMO.numero_cuota : proximoVencimiento?.numero_cuota;
 

@@ -72,8 +72,11 @@ const FILTROS_HIST = [
   { value: "pagada",    label: "Pagadas" },
 ];
 
+// Parsea fecha YYYY-MM-DD como hora local (evita el desfase UTC → Argentina)
+function parseFecha(s: string): Date { return new Date(s + "T12:00:00"); }
+
 function clasificar(c: CuotaRaw): string {
-  if (c.estado === "pendiente" && new Date(c.fecha_vencimiento) < new Date()) return "vencida";
+  if (c.estado === "pendiente" && parseFecha(c.fecha_vencimiento) < new Date()) return "vencida";
   return c.estado;
 }
 
@@ -158,7 +161,7 @@ export default function CobrosAdminPage() {
   const hoy = new Date();
 
   // Stats
-  const vencidas  = cuotas.filter(c => c.estado === "pendiente" && new Date(c.fecha_vencimiento) < hoy);
+  const vencidas  = cuotas.filter(c => c.estado === "pendiente" && parseFecha(c.fecha_vencimiento) < hoy);
   const fallidas  = cuotas.filter(c => c.estado === "fallida");
   const abiertas  = cuotas.filter(c => c.estado !== "pagada");
   const montoPend = abiertas.reduce((a, c) => a + c.monto, 0);
@@ -277,7 +280,7 @@ export default function CobrosAdminPage() {
   const histFiltradas = filtroHist === "todas"
     ? cuotas
     : filtroHist === "vencida"
-      ? cuotas.filter(c => c.estado === "pendiente" && new Date(c.fecha_vencimiento) < hoy)
+      ? cuotas.filter(c => c.estado === "pendiente" && parseFecha(c.fecha_vencimiento) < hoy)
       : cuotas.filter(c => c.estado === filtroHist);
 
   const montoSeleccionado = modalGrupo?.cuotasAbiertas
@@ -472,7 +475,7 @@ export default function CobrosAdminPage() {
                       <td className="px-5 py-3 font-medium text-gray-400">#{c.numero_cuota}</td>
                       <td className="px-5 py-3 font-semibold text-white">{formatearPesos(c.monto)}</td>
                       <td className={`px-5 py-3 ${est === "vencida" ? "font-semibold text-red-400" : "text-gray-400"}`}>
-                        {format(new Date(c.fecha_vencimiento), "d MMM yyyy", { locale: es })}
+                        {format(parseFecha(c.fecha_vencimiento), "d MMM yyyy", { locale: es })}
                       </td>
                       <td className="px-5 py-3">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE[est] ?? BADGE.pendiente}`}>
@@ -605,7 +608,7 @@ export default function CobrosAdminPage() {
                             <span className="text-sm text-white flex-1">
                               Cuota #{c.numero_cuota}
                               <span className="ml-2 text-xs text-gray-500">
-                                {format(new Date(c.fecha_vencimiento), "d MMM", { locale: es })}
+                                {format(parseFecha(c.fecha_vencimiento), "d MMM", { locale: es })}
                               </span>
                             </span>
                             <span className={`text-xs rounded-full px-2 py-0.5 ${BADGE[est] ?? BADGE.pendiente}`}>{est}</span>

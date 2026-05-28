@@ -4,7 +4,7 @@ import { getDeudas, getWorstSituacion } from "@/lib/bcra/client";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_EMAIL = "administracion@ciroprestamos.com.ar";
+const ADMIN_EMAIL = "contacto@zprest.com.ar";
 
 const SITUACION_LABEL: Record<number, string> = {
   0: "Sin deudas (situación 0)",

@@ -167,19 +167,24 @@ export async function POST(
 
   // 8. Generar cuotas
   if (esPyme) {
-    cuotasInsert = Array.from({ length: solicitud.cuotas }, (_, i) => {
-      const raw = new Date(ahora.getTime() + (i + 1) * 24 * 60 * 60 * 1000);
-      const vto = raw.getDay() === 0 ? new Date(raw.getTime() + 24 * 60 * 60 * 1000) : raw;
-      return {
-        prestamo_id: prestamo.id,
-        user_id: solicitud.user_id,
-        numero_cuota: i + 1,
-        monto: cuotaMonto,
-        fecha_vencimiento: vto.toISOString().split("T")[0],
-        estado: "pendiente",
-        reintentos_count: 0,
-      };
-    });
+    // Generar días hábiles (sin domingos) comenzando el día siguiente a la aprobación
+    const fechasPyme: string[] = [];
+    let cursor = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
+    while (fechasPyme.length < solicitud.cuotas) {
+      if (cursor.getDay() !== 0) {
+        fechasPyme.push(cursor.toISOString().split("T")[0]);
+      }
+      cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+    }
+    cuotasInsert = fechasPyme.map((fecha, i) => ({
+      prestamo_id: prestamo.id,
+      user_id: solicitud.user_id,
+      numero_cuota: i + 1,
+      monto: cuotaMonto,
+      fecha_vencimiento: fecha,
+      estado: "pendiente",
+      reintentos_count: 0,
+    }));
   } else {
     cuotasInsert = Array.from({ length: solicitud.cuotas }, (_, i) => {
       const vto = new Date(ahora.getFullYear(), ahora.getMonth() + i + 1, 1);

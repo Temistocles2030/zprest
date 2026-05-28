@@ -143,7 +143,7 @@ export async function POST(
   // 7. Crear préstamo
   const proximoVencimiento = esPyme
     ? new Date(ahora.getTime() + 1 * 24 * 60 * 60 * 1000)
-    : new Date(ahora.getFullYear(), ahora.getMonth() + 1, ahora.getDate());
+    : new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
 
   const { data: prestamo, error: prestamoError } = await supabase
     .from("prestamos")
@@ -168,8 +168,8 @@ export async function POST(
   // 8. Generar cuotas
   if (esPyme) {
     cuotasInsert = Array.from({ length: solicitud.cuotas }, (_, i) => {
-      const vto = new Date(ahora);
-      vto.setDate(vto.getDate() + i + 1);
+      const raw = new Date(ahora.getTime() + (i + 1) * 24 * 60 * 60 * 1000);
+      const vto = raw.getDay() === 0 ? new Date(raw.getTime() + 24 * 60 * 60 * 1000) : raw;
       return {
         prestamo_id: prestamo.id,
         user_id: solicitud.user_id,
@@ -182,7 +182,7 @@ export async function POST(
     });
   } else {
     cuotasInsert = Array.from({ length: solicitud.cuotas }, (_, i) => {
-      const vto = new Date(ahora.getFullYear(), ahora.getMonth() + i + 1, ahora.getDate());
+      const vto = new Date(ahora.getFullYear(), ahora.getMonth() + i + 1, 1);
       return {
         prestamo_id: prestamo.id,
         user_id: solicitud.user_id,

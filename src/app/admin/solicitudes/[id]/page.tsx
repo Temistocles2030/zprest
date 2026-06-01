@@ -398,21 +398,30 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
         <div className="rounded-xl border border-gray-700 bg-gray-800">
           <div className="border-b border-gray-700 px-5 py-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-300">Contrato digital</h2>
-            {solicitud.contrato_firmado && (
-              <span className="rounded-full bg-green-500/20 border border-green-500/30 px-3 py-0.5 text-xs font-semibold text-green-300">
-                ✓ Firmado
-              </span>
-            )}
-            {solicitud.contrato_rechazado && !solicitud.contrato_firmado && (
-              <span className="rounded-full bg-red-500/20 border border-red-500/30 px-3 py-0.5 text-xs font-semibold text-red-300">
-                ✕ Firma rechazada
-              </span>
-            )}
-            {solicitud.contrato_enviado_at && !solicitud.contrato_firmado && !solicitud.contrato_rechazado && (
-              <span className="rounded-full bg-yellow-500/20 border border-yellow-500/30 px-3 py-0.5 text-xs font-semibold text-yellow-300">
-                ⏳ Pendiente de firma
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {solicitud.contrato_firmado && (
+                <span className="rounded-full bg-green-500/20 border border-green-500/30 px-3 py-0.5 text-xs font-semibold text-green-300">
+                  ✓ Firmado
+                </span>
+              )}
+              {solicitud.contrato_rechazado && !solicitud.contrato_firmado && (
+                <span className="rounded-full bg-red-500/20 border border-red-500/30 px-3 py-0.5 text-xs font-semibold text-red-300">
+                  ✕ Firma rechazada
+                </span>
+              )}
+              {solicitud.contrato_enviado_at && !solicitud.contrato_firmado && !solicitud.contrato_rechazado && (
+                <span className="rounded-full bg-yellow-500/20 border border-yellow-500/30 px-3 py-0.5 text-xs font-semibold text-yellow-300">
+                  ⏳ Pendiente de firma
+                </span>
+              )}
+              <button
+                onClick={descargarContrato}
+                disabled={descargandoContrato}
+                className="rounded-lg border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-gray-600 transition disabled:opacity-50"
+              >
+                {descargandoContrato ? "Generando..." : "⬇ Descargar PDF"}
+              </button>
+            </div>
           </div>
           <div className="px-5 py-4 space-y-3 text-sm">
             {!solicitud.contrato_enviado_at ? (

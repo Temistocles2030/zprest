@@ -75,6 +75,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
   const [modal, setModal] = useState<ModalTipo>(null);
   const [procesando, setProcesando] = useState(false);
   const [enviandoContrato, setEnviandoContrato] = useState(false);
+  const [descargandoContrato, setDescargandoContrato] = useState(false);
   const [verificandoFirma, setVerificandoFirma] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [confirmEliminar, setConfirmEliminar] = useState("");
@@ -123,6 +124,29 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error((await res.json()).error ?? "Error");
+  }, [id, getToken]);
+
+  const descargarContrato = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    setDescargandoContrato(true);
+    try {
+      const res = await fetch(`/api/admin/solicitudes/${id}/descargar-contrato`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Error");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Contrato_${id.slice(0, 8).toUpperCase()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setResultado({ tipo: "error", msg: e instanceof Error ? e.message : "Error descargando contrato" });
+    } finally {
+      setDescargandoContrato(false);
+    }
   }, [id, getToken]);
 
   const enviarContrato = useCallback(async () => {
@@ -515,6 +539,13 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
                       className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-600 hover:text-white transition disabled:opacity-50"
                     >
                       {enviandoContrato ? "Generando..." : "↩ Reenviar contrato"}
+                    </button>
+                    <button
+                      onClick={descargarContrato}
+                      disabled={descargandoContrato}
+                      className="rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-xs font-semibold text-gray-200 hover:bg-gray-600 transition disabled:opacity-50"
+                    >
+                      {descargandoContrato ? "Generando..." : "⬇ Descargar PDF corregido"}
                     </button>
                   </div>
                 )}

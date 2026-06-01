@@ -416,15 +416,24 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
           </div>
           <div className="px-5 py-4 space-y-3 text-sm">
             {!solicitud.contrato_enviado_at ? (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-gray-400">El contrato aún no fue enviado al cliente.</p>
-                <button
-                  onClick={enviarContrato}
-                  disabled={enviandoContrato}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
-                >
-                  {enviandoContrato ? "Generando..." : "📄 Enviar a Signatura"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={descargarContrato}
+                    disabled={descargandoContrato}
+                    className="rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-600 transition disabled:opacity-50"
+                  >
+                    {descargandoContrato ? "Generando..." : "⬇ Descargar PDF"}
+                  </button>
+                  <button
+                    onClick={enviarContrato}
+                    disabled={enviandoContrato}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition disabled:opacity-50"
+                  >
+                    {enviandoContrato ? "Generando..." : "📄 Enviar a Signatura"}
+                  </button>
+                </div>
               </div>
             ) : (
               <dl className="divide-y divide-gray-700">

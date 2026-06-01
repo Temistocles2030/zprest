@@ -524,7 +524,10 @@ export async function generarContratoComercialPDF(datos: DatosContratoComercial)
   // Tabla de amortización diaria — fechas hábiles (sin domingos)
   const capitalDiario = Math.round(datos.monto / n);
   const interesDiario = datos.cuota_diaria - capitalDiario;
-  const primerFecha = new Date(datos.primera_cuota_fecha + "T12:00:00");
+  // Si ya viene con hora (ISO completo), parsearlo directo; si es YYYY-MM-DD, agregar mediodía local
+  const primerFecha = datos.primera_cuota_fecha.includes("T")
+    ? new Date(datos.primera_cuota_fecha)
+    : new Date(datos.primera_cuota_fecha + "T12:00:00");
 
   // Generar N fechas saltando domingos secuencialmente (evita duplicados)
   const fechasHabiles: Date[] = [];

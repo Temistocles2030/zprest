@@ -126,10 +126,9 @@ export async function GET(
         solicitud.monto * (ted / 100) * 0.21
       );
 
-      // Usar la fecha real de la primera cuota en DB
+      // Usar la fecha real de la primera cuota en DB (solo parte YYYY-MM-DD)
       const primeraFechaReal = primeraCuotaFecha
-        ? primeraCuotaFecha + "T12:00:00"
-        : new Date(new Date(fechaAprobacion).getTime() + 24 * 60 * 60 * 1000).toISOString();
+        ?? new Date(new Date(fechaAprobacion).getTime() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
       pdfBase64 = await generarContratoComercialPDF({
         nombre: usuario.nombre,

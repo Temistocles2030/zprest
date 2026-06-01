@@ -5,8 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/supabase/getToken";
 import { formatearPesos } from "@/lib/loan-calculator";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { es } from "date-fns/locale";
+
+function safeFmt(val: string | null | undefined, fmt: string): string {
+  if (!val) return "—";
+  const d = new Date(val);
+  return isValid(d) ? format(d, fmt, { locale: es }) : "—";
+}
 import type { Solicitud, EstadoSolicitud, HistorialEstado } from "@/types";
 
 interface PageProps { params: Promise<{ id: string }> }
@@ -288,7 +294,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
         <div>
           <h1 className="text-2xl font-bold text-white">Solicitud #{solicitud.id.slice(0, 8)}</h1>
           <p className="mt-1 text-sm text-gray-400">
-            Recibida {format(new Date(solicitud.created_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+            Recibida {safeFmt(solicitud.created_at, "d 'de' MMMM yyyy, HH:mm")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -358,7 +364,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
             ...(solicitud.motivo_rechazo      ? [["Motivo rechazo", solicitud.motivo_rechazo]]    : []),
             ...(solicitud.pre_aprobado_condiciones ? [["Condiciones pre-aprobación", solicitud.pre_aprobado_condiciones]] : []),
             ...(solicitud.pausado_motivo      ? [["Motivo pausa", solicitud.pausado_motivo]]       : []),
-            ...(solicitud.pausado_hasta       ? [["Pausa hasta",  format(new Date(solicitud.pausado_hasta), "d MMM yyyy", { locale: es })]] : []),
+            ...(solicitud.pausado_hasta       ? [["Pausa hasta",  safeFmt(solicitud.pausado_hasta, "d MMM yyyy")]] : []),
           ] as [string, string][]).map(([label, value]) => (
             <div key={label} className="flex justify-between gap-4 px-5 py-3">
               <dt className="shrink-0 text-gray-500">{label}</dt>
@@ -448,7 +454,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
               <dl className="divide-y divide-gray-700">
                 <div className="flex justify-between py-2">
                   <dt className="text-gray-500">Enviado</dt>
-                  <dd className="text-white">{format(new Date(solicitud.contrato_enviado_at), "d MMM yyyy, HH:mm", { locale: es })}</dd>
+                  <dd className="text-white">{safeFmt(solicitud.contrato_enviado_at, "d MMM yyyy, HH:mm")}</dd>
                 </div>
                 {solicitud.signatura_documento_id && (
                   <div className="flex justify-between py-2">
@@ -459,7 +465,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
                 {solicitud.contrato_firmado_at && (
                   <div className="flex justify-between py-2">
                     <dt className="text-gray-500">Firmado</dt>
-                    <dd className="text-white">{format(new Date(solicitud.contrato_firmado_at), "d MMM yyyy, HH:mm", { locale: es })}</dd>
+                    <dd className="text-white">{safeFmt(solicitud.contrato_firmado_at, "d MMM yyyy, HH:mm")}</dd>
                   </div>
                 )}
                 {solicitud.contrato_url && (
@@ -587,7 +593,7 @@ export default function DetalleSolicitudPage({ params }: PageProps) {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium text-white capitalize">{h.estado.replace(/_/g, " ")}</span>
                     <time className="text-xs text-gray-500">
-                      {format(new Date(h.fecha), "d MMM yyyy, HH:mm", { locale: es })}
+                      {safeFmt(h.fecha, "d MMM yyyy, HH:mm")}
                     </time>
                   </div>
                   {h.motivo && <p className="mt-0.5 text-xs text-gray-400 truncate">{h.motivo}</p>}

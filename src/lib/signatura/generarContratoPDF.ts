@@ -521,20 +521,27 @@ export async function generarContratoComercialPDF(datos: DatosContratoComercial)
   const fechaFmt = fechaLarga(datos.fecha_aprobacion);
   const primeraCuotaFmt = fechaLarga(datos.primera_cuota_fecha);
 
-  // Tabla de amortización diaria
+  // Tabla de amortización diaria — fechas hábiles (sin domingos)
   const capitalDiario = Math.round(datos.monto / n);
   const interesDiario = datos.cuota_diaria - capitalDiario;
-  const primerFecha = new Date(datos.primera_cuota_fecha);
+  const primerFecha = new Date(datos.primera_cuota_fecha + "T12:00:00");
+
+  // Generar N fechas saltando domingos secuencialmente (evita duplicados)
+  const fechasHabiles: Date[] = [];
+  let cursorFecha = new Date(primerFecha.getTime());
+  while (fechasHabiles.length < n) {
+    if (cursorFecha.getDay() !== 0) fechasHabiles.push(new Date(cursorFecha));
+    cursorFecha = new Date(cursorFecha.getTime() + 24 * 60 * 60 * 1000);
+  }
+
   const comercialRows: ComercialRow[] = [];
   let saldoRestante = datos.monto;
   for (let i = 0; i < n; i++) {
-    const rawDate = new Date(primerFecha.getTime() + i * 24 * 60 * 60 * 1000);
-    const fechaDia = rawDate.getDay() === 0 ? new Date(rawDate.getTime() + 24 * 60 * 60 * 1000) : rawDate;
     const capitalEste = i === n - 1 ? saldoRestante : capitalDiario;
     saldoRestante = Math.max(0, saldoRestante - capitalEste);
     comercialRows.push({
       n: String(i + 1),
-      fecha: format(fechaDia, "dd/MM/yyyy"),
+      fecha: format(fechasHabiles[i], "dd/MM/yyyy"),
       capital: formatearPesos(capitalEste),
       interes: formatearPesos(interesDiario),
       total: formatearPesos(capitalEste + interesDiario),

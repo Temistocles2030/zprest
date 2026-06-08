@@ -44,7 +44,7 @@ interface ArchivoSubido {
 }
 interface BCRACheck {
   loading: boolean; checked: boolean; situacion: number | null;
-  denominacion: string | null; error: string | null;
+  denominacion: string | null; error: string | null; excepcion?: boolean;
 }
 
 function iconTipo(tipo: string) {
@@ -267,8 +267,19 @@ export default function SolicitarPymePage() {
       const entidades = periodos[0]?.entidades ?? [];
       const situacion = entidades.length ? Math.max(...entidades.map((e: { situacion: number }) => e.situacion)) : 0;
       const denominacion = data.results?.denominacion ?? null;
-      setBcra({ loading: false, checked: true, situacion, denominacion, error: null });
-      return situacion < 4;
+
+      let excepcion = false;
+      if (situacion >= 4 && /^\d{11}$/.test(clean)) {
+        try {
+          const token = await getToken();
+          const excRes = await fetch(`/api/bcra/excepcion/${clean}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          const excData = await excRes.json();
+          excepcion = excData?.excepcion === true;
+        } catch { /* si falla la consulta de excepción, no desbloquear */ }
+      }
+
+      setBcra({ loading: false, checked: true, situacion, denominacion, error: null, excepcion });
+      return situacion < 4 || excepcion;
     } catch {
       setBcra({ loading: false, checked: true, situacion: null, denominacion: null, error: "Error al consultar BCRA" });
       return true;
@@ -539,7 +550,16 @@ export default function SolicitarPymePage() {
                 </div>
               </div>
             )}
-            {bcra.checked && !bcra.loading && bcra.situacion !== null && bcra.situacion >= 4 && (
+            {bcra.checked && !bcra.loading && bcra.situacion !== null && bcra.situacion >= 4 && bcra.excepcion && (
+              <div className="flex items-center gap-3 rounded-xl border border-blue-500/40 bg-blue-500/10 p-4 text-sm">
+                <span className="text-xl">✅</span>
+                <div>
+                  <p className="font-semibold text-blue-400">{bcra.denominacion} — Situación {bcra.situacion}</p>
+                  <p className="text-xs text-blue-400">Autorizado por administración para continuar pese a la situación crediticia.</p>
+                </div>
+              </div>
+            )}
+            {bcra.checked && !bcra.loading && bcra.situacion !== null && bcra.situacion >= 4 && !bcra.excepcion && (
               <div className="flex items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
                 <span className="text-xl">🚫</span>
                 <div>

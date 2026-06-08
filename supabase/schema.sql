@@ -189,6 +189,15 @@ create table if not exists public.actividad_admin (
   created_at timestamptz default now()
 );
 
+-- ── bcra_excepciones (admin autoriza continuar pese a situación BCRA mala) ────
+create table if not exists public.bcra_excepciones (
+  id uuid default gen_random_uuid() primary key,
+  cuil text not null unique,
+  motivo text,
+  creado_por uuid references public.usuarios(id) on delete set null,
+  created_at timestamptz default now()
+);
+
 -- ── emails_baneados ───────────────────────────────────────────────────────────
 create table if not exists public.emails_baneados (
   email text primary key,
@@ -247,6 +256,7 @@ alter table public.webauthn_credentials enable row level security;
 alter table public.webauthn_challenges enable row level security;
 alter table public.email_logs enable row level security;
 alter table public.actividad_admin enable row level security;
+alter table public.bcra_excepciones enable row level security;
 alter table public.emails_baneados enable row level security;
 alter table public.otp_codes enable row level security;
 alter table public.ziro_config enable row level security;
@@ -263,6 +273,7 @@ create policy webauthn_own      on public.webauthn_credentials for select using 
 create policy deny_all_challenges  on public.webauthn_challenges  using (false);
 create policy deny_all_email_logs  on public.email_logs           using (false);
 create policy deny_all_actividad   on public.actividad_admin      using (false);
+create policy deny_all_bcra_excep  on public.bcra_excepciones     using (false);
 create policy deny_all_baneados    on public.emails_baneados      using (false);
 create policy deny_all_otp         on public.otp_codes            using (false);
 create policy deny_all_ziro        on public.ziro_config          using (false);

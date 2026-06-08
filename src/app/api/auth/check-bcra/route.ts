@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDeudas, getWorstSituacion } from "@/lib/bcra/client";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const { cuil } = await req.json();
@@ -16,14 +17,23 @@ export async function POST(req: NextRequest) {
 
     // Solo se permite situación 1 o 2 (normal o seguimiento especial)
     // Situación 0 = sin deuda registrada → permitir
-    // Situación 3+ = irregular/alto riesgo → bloquear
+    // Situación 3+ = irregular/alto riesgo → bloquear, salvo excepción cargada por un admin
     if (situacion >= 3) {
-      return NextResponse.json({
-        ok: false,
-        error: "Tu perfil crediticio no cumple requisitos mínimos para acceder a un préstamo. Desde ya gracias por contactarnos.",
-        bcra_bloqueado: true,
-        situacion,
-      });
+      const supabase = createAdminClient();
+      const { data: excepcion } = await supabase
+        .from("bcra_excepciones")
+        .select("cuil")
+        .eq("cuil", cuilLimpio)
+        .maybeSingle();
+
+      if (!excepcion) {
+        return NextResponse.json({
+          ok: false,
+          error: "Tu perfil crediticio no cumple requisitos mínimos para acceder a un préstamo. Desde ya gracias por contactarnos.",
+          bcra_bloqueado: true,
+          situacion,
+        });
+      }
     }
 
     return NextResponse.json({ ok: true, situacion });

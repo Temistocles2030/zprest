@@ -1,4 +1,5 @@
 import forge from "node-forge";
+import crypto from "crypto";
 
 const WSAA_URL = "https://wsaa.afip.gov.ar/ws/services/LoginCms";
 
@@ -38,9 +39,20 @@ function buildTRA(service: string): string {
 </loginTicketRequest>`;
 }
 
+// Node crypto acepta cualquier formato RSA (PKCS8, PKCS1, cifrado, etc.)
+// y lo exporta como PKCS1 que forge siempre entiende.
+function normalizarClave(keyPem: string): string {
+  try {
+    const k = crypto.createPrivateKey(keyPem);
+    return k.export({ type: "pkcs1", format: "pem" }) as string;
+  } catch {
+    return keyPem;
+  }
+}
+
 function signTRA(traXml: string, certPem: string, keyPem: string): string {
   const cert = forge.pki.certificateFromPem(certPem);
-  const privateKey = forge.pki.privateKeyFromPem(keyPem);
+  const privateKey = forge.pki.privateKeyFromPem(normalizarClave(keyPem));
 
   const p7 = forge.pkcs7.createSignedData();
   p7.content = forge.util.createBuffer(traXml, "utf8");

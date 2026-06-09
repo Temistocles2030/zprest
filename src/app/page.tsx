@@ -353,6 +353,7 @@ export default async function HomePage() {
                     <span className="text-[11px] text-blue-300/50">Ley 24.240</span>
                   </Link>
                 </li>
+                <li><Link href="/arca" className="hover:text-white transition">Consulta ARCA</Link></li>
               </ul>
             </div>
 

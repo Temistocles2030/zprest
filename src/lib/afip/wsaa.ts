@@ -14,8 +14,15 @@ function getCredentials() {
     throw new Error("AFIP_CERT_BASE64 y AFIP_KEY_BASE64 deben estar configurados");
   }
 
-  const certPem = Buffer.from(certBase64.trim(), "base64").toString("utf-8");
-  const keyPem = Buffer.from(keyBase64.trim(), "base64").toString("utf-8");
+  let certPem = Buffer.from(certBase64.trim(), "base64").toString("utf-8");
+  let keyPem = Buffer.from(keyBase64.trim(), "base64").toString("utf-8");
+
+  // Si están invertidos (el "key" contiene un cert o el "cert" contiene una clave), intercambiar.
+  const keySeemsCert = keyPem.includes("BEGIN CERTIFICATE");
+  const certSeemsKey = certPem.includes("BEGIN PRIVATE KEY") || certPem.includes("BEGIN RSA PRIVATE KEY");
+  if (keySeemsCert || certSeemsKey) {
+    [certPem, keyPem] = [keyPem, certPem];
+  }
 
   return { certPem, keyPem };
 }

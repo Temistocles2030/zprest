@@ -39,14 +39,17 @@ function buildTRA(service: string): string {
 </loginTicketRequest>`;
 }
 
-// Node crypto acepta cualquier formato RSA (PKCS8, PKCS1, cifrado, etc.)
+// Node crypto acepta cualquier formato RSA (PKCS8, PKCS1, etc.)
 // y lo exporta como PKCS1 que forge siempre entiende.
 function normalizarClave(keyPem: string): string {
+  const header = keyPem.split("\n")[0]?.trim() ?? "(vacío)";
   try {
-    const k = crypto.createPrivateKey(keyPem);
+    const k = crypto.createPrivateKey({ key: keyPem, format: "pem" });
     return k.export({ type: "pkcs1", format: "pem" }) as string;
-  } catch {
-    return keyPem;
+  } catch (e) {
+    throw new Error(
+      `AFIP_KEY_BASE64 no es una clave RSA válida. Header detectado: "${header}". Error: ${e instanceof Error ? e.message : e}`
+    );
   }
 }
 

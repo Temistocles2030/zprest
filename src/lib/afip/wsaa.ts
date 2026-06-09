@@ -48,7 +48,7 @@ function normalizarClave(keyPem: string): string {
     return k.export({ type: "pkcs1", format: "pem" }) as string;
   } catch (e) {
     throw new Error(
-      `AFIP_KEY_BASE64 no es una clave RSA válida. Header detectado: "${header}". Error: ${e instanceof Error ? e.message : e}`
+      `Clave privada AFIP inválida. Header: "${header}". Detalle: ${e instanceof Error ? e.message : e}`
     );
   }
 }

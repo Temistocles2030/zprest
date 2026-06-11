@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propuesta de Mantenimiento Web — Zprest</title>
+
+<!-- ============================================================
+  ANTES DE ENVIAR, REVISÁ Y AJUSTÁ:
+  - Precios de los 3 planes (buscar "$")
+  - Datos de contacto al final (WhatsApp / email)
+  - Fecha en el header
+============================================================= -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-soft: #16243d;
+    --gold: #d4af37;
+    --gold-soft: #f6ecc9;
+    --blue: #2563eb;
+    --blue-soft: #eaf1ff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-700: #334155;
+    --green: #16a34a;
+    --green-soft: #e9f9ef;
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: 'Sora', system-ui, sans-serif;
+    color: var(--navy);
+    background: var(--gray-50);
+    line-height: 1.55;
+    font-size: 16px;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 0 60px;
+  }
+
+  /* ===== HEADER ===== */
+  header.hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+    color: #fff;
+    padding: 40px 24px 36px;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 32px;
+  }
+
+  .hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+  }
+  .brand span { color: var(--gold); }
+  .brand small {
+    display: block;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--gray-400);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .hero-date {
+    font-size: 12px;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: right;
+  }
+
+  header.hero h1 {
+    margin: 0 0 8px;
+    font-size: clamp(24px, 5vw, 36px);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  header.hero p.subtitle {
+    margin: 0;
+    color: var(--gray-400);
+    font-size: 15px;
+    max-width: 60ch;
+  }
+
+  header.hero .for {
+    margin-top: 18px;
+    display: inline-block;
+    background: rgba(212,175,55,0.12);
+    border: 1px solid rgba(212,175,55,0.35);
+    color: var(--gold);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* ===== SECCIONES GENERALES ===== */
+  section { padding: 0 24px; margin-bottom: 40px; }
+
+  h2.section-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: var(--navy);
+  }
+  .section-kicker {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--blue);
+    margin: 0 0 6px;
+  }
+  .section-lead {
+    color: var(--gray-500);
+    margin: 0 0 24px;
+    font-size: 15px;
+    max-width: 70ch;
+  }
+
+  /* ===== INTRO ===== */
+  .intro-box {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .intro-box p { margin: 0 0 14px; font-size: 15.5px; }
+  .intro-box p:last-child { margin-bottom: 0; }
+  .intro-box .highlight {
+    background: linear-gradient(transparent 60%, var(--gold-soft) 60%);
+    font-weight: 600;
+  }
+
+  /* ===== RIESGOS ===== */
+  .riesgos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 700px) {
+    .riesgos { grid-template-columns: repeat(2, 1fr); }
+  }
+  .riesgo-card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--gold);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .riesgo-card .icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .riesgo-card h3 {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    font-weight: 700;
+  }
+  .riesgo-card p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--gray-500);
+  }
+
+  /* ===== PLANES ===== */
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+  @media (min-width: 860px) {
+    .plans { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .plan-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 26px 22px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+
+  .plan-card.featured {
+    border: 2px solid var(--gold);
+    box-shadow: 0 8px 24px rgba(212,175,55,0.18);
+  }
+  @media (min-width: 860px) {
+    .plan-card.featured { transform: translateY(-10px); }
+  }
+
+  .plan-badge {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 11.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .plan-name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--blue);
+    margin: 0 0 4px;
+  }
+  .plan-card.featured .plan-name { color: #b8860b; }
+
+  .plan-title {
+    font-size: 19px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: var(--navy);
+  }
+  .plan-tagline {
+    font-size: 13.5px;
+    color: var(--gray-500);
+    margin: 0 0 18px;
+    min-height: 38px;
+  }
+
+  .plan-price {
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .plan-price .amount {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .plan-price .period {
+    font-size: 13px;
+    color: var(--gray-500);
+    font-weight: 500;
+  }
+  .plan-iva {
+    font-size: 12px;
+    color: var(--gray-400);
+    margin: 0 0 20px;
+  }
+
+  .plan-features {
+    list-style: none;
+    margin: 0 0 22px;
+    padding: 0;
+    flex-grow: 1;
+  }
+  .plan-features li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13.5px;
+    margin-bottom: 11px;
+    color: var(--gray-700);
+  }
+  .plan-features li .check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .plan-cta {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    border: 1.5px solid var(--navy);
+    color: var(--navy);
+    transition: all .15s ease;
+  }
+  .plan-card.featured .plan-cta {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+
+  .plans-note {
+    margin-top: 22px;
+    background: var(--blue-soft);
+    border: 1px solid #c7dbff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: var(--gray-700);
+  }
+  .plans-note strong { color: var(--navy); }
+
+  /* ===== TABLA COMPARATIVA ===== */
+  .table-wrap {
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+  }
+  table.compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 560px;
+  }
+  table.compare th, table.compare td {
+    padding: 12px 14px;
+    text-align: center;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  table.compare th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gray-500);
+    font-weight: 700;
+  }
+  table.compare td:first-child, table.compare th:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: var(--navy);
+    position: sticky;
+    left: 0;
+    background: #fff;
+  }
+  table.compare th:nth-child(3), table.compare td:nth-child(3) {
+    background: var(--gold-soft);
+  }
+  table.compare tr:last-child td { border-bottom: none; }
+  table.compare .yes { color: var(--green); font-weight: 800; }
+  table.compare .no { color: var(--gray-400); }
+
+  /* ===== SOBRE MI ===== */
+  .about {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  @media (min-width: 700px) {
+    .about { flex-direction: row; align-items: center; }
+  }
+  .about-avatar {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: var(--navy);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+  }
+  .about p { margin: 0 0 8px; font-size: 14px; color: var(--gray-700); }
+  .about p:last-child { margin-bottom: 0; }
+  .about a { color: var(--blue); font-weight: 600; text-decoration: none; }
+
+  /* ===== CTA FINAL ===== */
+  .final-cta {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+    color: #fff;
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .final-cta h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .final-cta p {
+    margin: 0 0 22px;
+    color: var(--gray-400);
+    font-size: 14.5px;
+    max-width: 50ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--navy);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--gray-400);
+  }
+
+  /* ===== BOTÓN IMPRIMIR (no se imprime) ===== */
+  .print-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 22px;
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 6px 20px rgba(10,22,40,0.35);
+    cursor: pointer;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { background: #fff; font-size: 12.5px; }
+    .container { max-width: 100%; padding: 0; }
+    .no-print { display: none !important; }
+    header.hero { border-radius: 0; margin-bottom: 20px; }
+    section { padding: 0 14px; margin-bottom: 22px; page-break-inside: avoid; }
+    .plans { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .plan-card { box-shadow: none; padding: 16px 14px; page-break-inside: avoid; }
+    .plan-card.featured { transform: none; }
+    .plan-features li { margin-bottom: 6px; }
+    .riesgos { grid-template-columns: repeat(2, 1fr); }
+    .final-cta { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    @page { size: A4; margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Guardar / Imprimir PDF</button>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="hero">
+    <div class="hero-top">
+      <div class="brand">
+        Mariano Aliandri <span>— Desarrollo Web</span>
+        <small>marianoaliandri.com.ar</small>
+      </div>
+      <div class="hero-date">Junio 2026</div>
+    </div>
+    <h1>Propuesta de Mantenimiento Web</h1>
+    <p class="subtitle">
+      Plataforma Zprest · zprest.com.ar — Acompañamiento técnico continuo para que la plataforma
+      de Zayin Servicios Financieros funcione siempre, esté segura y siga creciendo.
+    </p>
+    <span class="for">Preparado para Temístocles Villegas — Zayin Servicios Financieros</span>
+  </header>
+
+  <!-- INTRO -->
+  <section>
+    <p class="section-kicker">Por qué esta propuesta</p>
+    <h2 class="section-title">Una plataforma financiera no se puede dar el lujo de fallar</h2>
+    <div class="intro-box">
+      <p>
+        Hola Temístocles. Zprest ya está funcionando y otorgando préstamos en producción.
+        Pero a diferencia de una página institucional, acá <span class="highlight">cada minuto
+        de actividad importa</span>: si el login falla, si un cliente no recibe el código por
+        WhatsApp o email, o si la consulta a BCRA o AFIP se cae, el resultado directo es
+        un préstamo que no se otorga — y un cliente que se frustra y se va.
+      </p>
+      <p>
+        Desde que desarrollé la plataforma vengo resolviendo estos temas a demanda, cuando
+        surgen. Esta propuesta es para ordenar ese acompañamiento en un esquema mensual claro:
+        vos te dedicás a hacer crecer Zayin, y yo me encargo de que Zprest funcione todos los
+        días, esté protegida y siga sumando funciones a medida que el negocio lo necesite.
+      </p>
+    </div>
+  </section>
+
+  <!-- RIESGOS / QUE SE CUIDA -->
+  <section>
+    <p class="section-kicker">Qué pasa si nadie lo cuida</p>
+    <h2 class="section-title">Lo que parece "técnico" es, en realidad, negocio</h2>
+    <p class="section-lead">
+      Algunos ejemplos concretos de cosas que pueden fallar en el día a día — y que hoy
+      reviso para que no te enteres por un cliente enojado.
+    </p>
+    <div class="riesgos">
+      <div class="riesgo-card">
+        <span class="icon">🔐</span>
+        <h3>El login o el registro dejan de funcionar</h3>
+        <p>Me aseguro de que tus clientes siempre puedan ingresar, registrarse y recibir
+          el código de verificación por email o WhatsApp para pedir un préstamo.</p>
+      </div>
+      <div class="riesgo-card">
+        <span class="icon">🏦</span>
+        <h3>Se cae la consulta a BCRA o AFIP</h3>
+        <p>Estos servicios externos a veces fallan o cambian. Reviso que la verificación
+          de cada solicitante se siga haciendo automáticamente, sin demoras.</p>
+      </div>
+      <div class="riesgo-card">
+        <span class="icon">🧮</span>
+        <h3>Las tasas y cuotas no son las que deberían</h3>
+        <p>Reviso que el simulador y el cálculo de cuotas reflejen siempre las tasas
+          (TNA/TEM/TED) vigentes que vos definas.</p>
+      </div>
+      <div class="riesgo-card">
+        <span class="icon">🛡️</span>
+        <h3>Datos sensibles de tus clientes en riesgo</h3>
+        <p>Aplico actualizaciones de seguridad y reviso accesos para proteger la
+          información personal y financiera que maneja la plataforma.</p>
+      </div>
+      <div class="riesgo-card">
+        <span class="icon">📉</span>
+        <h3>La plataforma se cae y nadie se entera</h3>
+        <p>Monitoreo activo: si Zprest deja de responder, me llega un aviso a mí —
+          no necesitás que un cliente te avise por WhatsApp.</p>
+      </div>
+      <div class="riesgo-card">
+        <span class="icon">🚀</span>
+        <h3>Querés sumar algo nuevo y no sabés a quién llamar</h3>
+        <p>Ya conozco la plataforma de punta a punta. Cualquier mejora o nueva
+          funcionalidad se hace más rápido y sin curva de aprendizaje.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANES -->
+  <section id="planes">
+    <p class="section-kicker">Planes de mantenimiento</p>
+    <h2 class="section-title">Elegí el nivel de acompañamiento que necesita Zayin</h2>
+    <p class="section-lead">
+      Los tres planes incluyen monitoreo activo de la plataforma y corrección de errores.
+      La diferencia está en los tiempos de respuesta, el alcance del monitoreo y las horas
+      de desarrollo incluidas para mejoras.
+    </p>
+
+    <div class="plans">
+
+      <!-- PLAN ESENCIAL -->
+      <div class="plan-card">
+        <p class="plan-name">Esencial</p>
+        <h3 class="plan-title">Que nunca se caiga</h3>
+        <p class="plan-tagline">Para mantener la plataforma estable, segura y funcionando
+          sin sorpresas.</p>
+        <div class="plan-price">
+          <span class="amount">$320.000</span>
+          <span class="period">/ mes</span>
+        </div>
+        <p class="plan-iva">+ IVA · facturación mensual</p>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Monitoreo de disponibilidad de Zprest las 24 hs</li>
+          <li><span class="check">✓</span> Corrección de errores críticos (login, formularios, pagos)</li>
+          <li><span class="check">✓</span> Copias de seguridad periódicas de la base de datos</li>
+          <li><span class="check">✓</span> Actualizaciones de seguridad de la plataforma</li>
+          <li><span class="check">✓</span> Control de vencimiento de dominio, certificados y credenciales</li>
+          <li><span class="check">✓</span> Soporte por WhatsApp / email — respuesta en 48 hs hábiles</li>
+          <li><span class="check">✓</span> Hasta 2 hs/mes de ajustes menores</li>
+        </ul>
+        <a href="#contacto" class="plan-cta">Consultar este plan</a>
+      </div>
+
+      <!-- PLAN PROFESIONAL (DESTACADO) -->
+      <div class="plan-card featured">
+        <span class="plan-badge">★ Más elegido</span>
+        <p class="plan-name">Profesional</p>
+        <h3 class="plan-title">Que crezca con tranquilidad</h3>
+        <p class="plan-tagline">Para que el flujo completo de un préstamo —desde el
+          registro hasta la aprobación— funcione siempre.</p>
+        <div class="plan-price">
+          <span class="amount">$580.000</span>
+          <span class="period">/ mes</span>
+        </div>
+        <p class="plan-iva">+ IVA · facturación mensual</p>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Todo lo incluido en el plan Esencial</li>
+          <li><span class="check">✓</span> Monitoreo del flujo de ingreso de clientes (verificación por email y WhatsApp)</li>
+          <li><span class="check">✓</span> Control de las consultas automáticas a BCRA y AFIP</li>
+          <li><span class="check">✓</span> Revisión mensual de tasas, planes y simulador de cuotas</li>
+          <li><span class="check">✓</span> Soporte prioritario — respuesta en 24 hs, incluye urgencias de fin de semana</li>
+          <li><span class="check">✓</span> Reporte mensual de actividad: solicitudes, errores resueltos y mejoras aplicadas</li>
+          <li><span class="check">✓</span> Hasta 6 hs/mes de desarrollo para ajustes y mejoras</li>
+        </ul>
+        <a href="#contacto" class="plan-cta">Quiero este plan</a>
+      </div>
+
+      <!-- PLAN AVANZADO -->
+      <div class="plan-card">
+        <p class="plan-name">Avanzado</p>
+        <h3 class="plan-title">Que siga evolucionando</h3>
+        <p class="plan-tagline">Para negocios que quieren seguir sumando funciones y
+          contar con un desarrollador propio sin contratarlo full-time.</p>
+        <div class="plan-price">
+          <span class="amount">$980.000</span>
+          <span class="period">/ mes</span>
+        </div>
+        <p class="plan-iva">+ IVA · facturación mensual</p>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Todo lo incluido en el plan Profesional</li>
+          <li><span class="check">✓</span> Soporte prioritario — respuesta en menos de 8 hs, todos los días</li>
+          <li><span class="check">✓</span> Hasta 14 hs/mes de desarrollo para nuevas funcionalidades</li>
+          <li><span class="check">✓</span> Acompañamiento en integraciones con nuevos proveedores (cobros, mensajería, verificación de identidad)</li>
+          <li><span class="check">✓</span> Reunión mensual de seguimiento para planificar mejoras</li>
+          <li><span class="check">✓</span> Optimización continua de velocidad y seguridad</li>
+        </ul>
+        <a href="#contacto" class="plan-cta">Quiero este plan</a>
+      </div>
+
+    </div>
+
+    <div class="plans-note">
+      <strong>En todos los planes:</strong> trato directo conmigo (sin tickets ni intermediarios),
+      el código fuente y la información de la plataforma siempre a tu disposición, y sin
+      permanencia mínima — podés cambiar de plan o dar de baja avisando con 30 días de anticipación.
+      Las horas de desarrollo no utilizadas en el mes no se acumulan.
+    </div>
+  </section>
+
+  <!-- TABLA COMPARATIVA -->
+  <section>
+    <p class="section-kicker">Comparativa rápida</p>
+    <h2 class="section-title">Diferencias entre planes de un vistazo</h2>
+    <div class="table-wrap">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Incluye</th>
+            <th>Esencial</th>
+            <th>Profesional</th>
+            <th>Avanzado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Monitoreo de disponibilidad 24/7</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Backups y actualizaciones de seguridad</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Monitoreo de verificación (Email / WhatsApp)</td>
+            <td class="no">—</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Monitoreo de BCRA / AFIP</td>
+            <td class="no">—</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Reporte mensual de actividad</td>
+            <td class="no">—</td>
+            <td class="yes">✓</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Tiempo de respuesta</td>
+            <td>48 hs hábiles</td>
+            <td>24 hs (urgencias finde incluidas)</td>
+            <td>&lt; 8 hs, todos los días</td>
+          </tr>
+          <tr>
+            <td>Horas de desarrollo incluidas / mes</td>
+            <td>2 hs</td>
+            <td>6 hs</td>
+            <td>14 hs</td>
+          </tr>
+          <tr>
+            <td>Reunión mensual de seguimiento</td>
+            <td class="no">—</td>
+            <td class="no">—</td>
+            <td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td>Acompañamiento en nuevas integraciones</td>
+            <td class="no">—</td>
+            <td class="no">—</td>
+            <td class="yes">✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SOBRE MI -->
+  <section>
+    <p class="section-kicker">Quién está del otro lado</p>
+    <h2 class="section-title">Sobre mí</h2>
+    <div class="about">
+      <div class="about-avatar">MA</div>
+      <div>
+        <p>
+          Soy Mariano Aliandri, desarrollador full-stack. Diseñé y desarrollé Zprest
+          desde cero: el sitio público, el simulador de préstamos, el portal de clientes,
+          el panel de administración y todas las integraciones (verificación de identidad,
+          BCRA, AFIP, notificaciones por email y WhatsApp).
+        </p>
+        <p>
+          Conozco la plataforma por dentro y por fuera, así que cualquier problema o
+          mejora se resuelve sin tiempo de aprendizaje ni dependencia de terceros.
+          Más info en <a href="https://marianoaliandri.com.ar" target="_blank" rel="noopener">marianoaliandri.com.ar</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section id="contacto">
+    <div class="final-cta">
+      <h2>¿Avanzamos?</h2>
+      <p>
+        Si te parece bien, definimos juntos el plan que mejor se ajusta al momento
+        de Zayin y arrancamos. También podemos ajustar el alcance de cualquier plan
+        a medida.
+      </p>
+      <div class="cta-buttons no-print">
+        <a class="btn btn-primary" href="https://wa.me/5490000000000?text=Hola%20Mariano%2C%20quiero%20avanzar%20con%20la%20propuesta%20de%20mantenimiento%20de%20Zprest" target="_blank" rel="noopener">
+          💬 Escribime por WhatsApp
+        </a>
+        <a class="btn btn-secondary" href="mailto:hola@marianoaliandri.com.ar?subject=Propuesta%20de%20mantenimiento%20Zprest">
+          ✉️ Enviarme un email
+        </a>
+      </div>
+      <div class="cta-buttons" style="display:none">
+        <!-- Versión visible solo al imprimir -->
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Mariano Aliandri — Desarrollo Web · marianoaliandri.com.ar · Propuesta válida por 30 días desde su envío.
+  </footer>
+
+</div>
+
+</body>
+</html>

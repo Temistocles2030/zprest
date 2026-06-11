@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { getAuthToken } from "@/lib/supabase/getToken";
 import { format } from "date-fns";
@@ -610,6 +611,7 @@ export default function ClientesAdminPage() {
                   [null,          "C. Postal"],
                   [null,          "CBU"],
                   ["solicitudes", "Solicitudes"],
+                  [null,          "Doc"],
                   ["prestamos",   "Crédito"],
                   ["estado",      "Estado"],
                   [null,          "Motivo estado"],
@@ -799,6 +801,20 @@ export default function ClientesAdminPage() {
                     {/* N° Solicitudes */}
                     <td className="px-4 py-3 whitespace-nowrap text-center">
                       <span className="text-xs text-gray-400">{nSolicitudes(c)}</span>
+                    </td>
+                    {/* Documentación */}
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      {nSolicitudes(c) > 0 && activo ? (
+                        <Link
+                          href={`/admin/clientes/${c.id}/documentos`}
+                          title="Ver documentación"
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 transition"
+                        >
+                          📄
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-gray-600">—</span>
+                      )}
                     </td>
                     {/* Crédito activo */}
                     <td className="px-4 py-3 whitespace-nowrap">

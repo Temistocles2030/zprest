@@ -12,7 +12,6 @@ interface PageProps { params: Promise<{ id: string }> }
 type Cliente = {
   id: string;
   nombre: string | null;
-  apellido: string | null;
   email: string;
   dni: string | null;
   cuil: string | null;

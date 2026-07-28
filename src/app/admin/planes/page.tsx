@@ -45,15 +45,35 @@ export default function PlanesPage() {
   const cargar = async () => {
     setLoading(true);
     if (IS_MOCK) {
-      // En mock mode, simular datos de ejemplo
       setPlanes([]);
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/admin/planes");
-    const data = await res.json();
-    setPlanes(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/planes");
+      
+      if (!res.ok) {
+        console.error(`Error en la API de planes: ${res.status}`);
+        setPlanes([]); // Mantiene un array vacío para que .filter() no falle
+        showToast("Error de autenticación o sesión expirada", false);
+        return;
+      }
+
+      const data = await res.json();
+      
+      if (Array.isArray(data)) {
+        setPlanes(data);
+      } else {
+        console.error("La respuesta de la API no es un array válido:", data);
+        setPlanes([]);
+      }
+    } catch (error) {
+      console.error("Fallo de red al cargar planes:", error);
+      setPlanes([]);
+      showToast("Error de conexión al cargar los planes", false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { cargar(); }, []);
@@ -151,7 +171,6 @@ export default function PlanesPage() {
     showToast(newActivo ? "Plan activado" : "Plan desactivado");
   };
 
-  // Preview de cuota según form actual
   const previewCuota = (() => {
     if (form.tipo === "personal" && form.tem) {
       return calcularCuotaPersonal(form.monto_min, form.tem, form.plazo_min);
@@ -162,14 +181,12 @@ export default function PlanesPage() {
     return null;
   })();
 
-  // Agrupar planes por tipo
   const planesPersonal = planes.filter((p) => p.tipo === "personal");
   const planesComercial = planes.filter((p) => p.tipo === "pyme");
   const planesDependencia = planes.filter((p) => p.tipo === "dependencia");
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
       {toast && (
         <div className={`fixed right-6 top-6 z-50 rounded-xl px-5 py-3 text-sm font-semibold shadow-2xl transition ${
           toast.ok ? "bg-green-600 text-white" : "bg-red-600 text-white"
@@ -180,7 +197,6 @@ export default function PlanesPage() {
 
       <h1 className="text-2xl font-bold text-gray-100">Gestor de Planes</h1>
 
-      {/* Formulario */}
       <div className="rounded-xl border border-gray-700 bg-gray-800 p-6 shadow-sm">
         <h2 className="mb-4 font-semibold text-gray-200">
           {editId ? "Editar plan" : "Nuevo plan"}
@@ -261,7 +277,6 @@ export default function PlanesPage() {
               </select>
             </div>
 
-            {/* TEM — solo para personal/dependencia */}
             <div>
               <label className={LABEL_CLS}>
                 TEM % <span className="text-gray-500">(Tasa Efectiva Mensual — plan personal)</span>
@@ -275,7 +290,6 @@ export default function PlanesPage() {
               />
             </div>
 
-            {/* TED — solo para pyme */}
             <div>
               <label className={LABEL_CLS}>
                 TED % <span className="text-gray-500">(Tasa Efectiva Diaria — plan comercial)</span>
@@ -309,7 +323,6 @@ export default function PlanesPage() {
               <p className="mt-1 text-[11px] text-gray-500">Cada plan tiene plazo fijo (plazo_min = plazo_max)</p>
             </div>
 
-            {/* Preview */}
             {previewCuota !== null && (
               <div className="rounded-lg border border-blue-800/40 bg-blue-950/30 p-4">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400">
@@ -346,7 +359,6 @@ export default function PlanesPage() {
         </form>
       </div>
 
-      {/* Lista agrupada */}
       {loading ? (
         <div className="h-40 animate-pulse rounded-xl bg-gray-700" />
       ) : (

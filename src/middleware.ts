@@ -5,34 +5,34 @@ const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 
 // Rutas que requieren autenticación
 const PORTAL_PREFIX = "/(portal)";
-const PROTECTED_PATHS = ["/dashboard", "/mis-prestamos", "/solicitar"];
-const ADMIN_PATHS = ["/admin"];
+const PROTECTED_PATHS = ["/dashboard", "/mis-prestamos", "/solicitar", "/planes"];
+// 👇 Agregamos "/api/admin" a los paths de administrador
+const ADMIN_PATHS = ["/admin", "/api/admin"]; 
 
-// 👇 Volvemos a usar 'middleware' para que la autenticación funcione
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // En mock mode no verificamos sesión Supabase
   if (IS_MOCK) {
     return NextResponse.next();
   }
 
   const { supabase, response } = createMiddlewareClient(request);
 
-  // Verificar usuario autenticado contra el servidor (no desde cookies)
   const { data: { user } } = await supabase.auth.getUser();
 
   const isProtectedPortal = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
   const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
 
-  // Redirigir a login si no hay sesión verificada
   if ((isProtectedPortal || isAdminPath) && !user) {
+    // Si la ruta es de API, devolvemos error en vez de redirigir
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Para rutas admin: verificar role (user.id ya está autenticado por getUser())
   if (isAdminPath && user) {
     const { data: usuario } = await supabase
       .from("usuarios")
@@ -41,6 +41,9 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (usuario?.role !== "admin") {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Prohibido" }, { status: 403 });
+      }
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
@@ -48,11 +51,14 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// 👇 Agregamos "/api/admin/:path*" para que el sistema intercepte esas llamadas
 export const config = {
   matcher: [
     "/dashboard/:path*",
     "/mis-prestamos/:path*",
     "/solicitar/:path*",
+    "/planes/:path*",
     "/admin/:path*",
+    "/api/admin/:path*",
   ],
 };

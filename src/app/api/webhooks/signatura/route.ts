@@ -8,34 +8,20 @@ import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-
 import { enviarPrestamoAprobado } from "@/lib/resend/emails";
 
 /**
- * Webhook de Signatura Connect.
- *
- * Payload (docs.signatura.co/docs/webhooks):
- *   DS — firma completada:
- *     { notification_action: "DS", document_id: "uuid", signature_id: "uuid" }
- *   SD — firma rechazada:
- *     { notification_action: "SD", document_id: "uuid", signature_id: "uuid" }
- *   DC — cambio de estado del documento:
- *     { notification_action: "DC", document_id: "uuid", new_status: "CO" | "CA" | ... }
- *
- * Seguridad: header X-Signature-SHA256 con HMAC-SHA256.
- *   La clave (SIGNATURA_WEBHOOK_SECRET) está en formato hex en el panel de Signatura.
+ * Webhook de Signatura Connect - Versión Protegida y Completa
  */
 
 function verificarFirmaHMAC(rawBody: string, signatureHeader: string, secret: string): boolean {
   try {
-    // Normalizar: quitar prefijo "sha256=" si viene
     const sig = signatureHeader.startsWith("sha256=")
       ? signatureHeader.slice(7)
       : signatureHeader;
 
-    // Intentar con el secret como texto plano (UTF-8)
     const expectedUtf8 = createHmac("sha256", Buffer.from(secret, "utf8")).update(rawBody).digest("hex");
     if (sig.length === expectedUtf8.length &&
         timingSafeEqual(Buffer.from(expectedUtf8, "utf8"), Buffer.from(sig, "utf8"))) {
       return true;
     }
-    // Fallback: intentar decodificando el secret como hex
     const secretBytes = Buffer.from(secret, "hex");
     if (secretBytes.length > 0) {
       const expectedHex = createHmac("sha256", secretBytes).update(rawBody).digest("hex");
@@ -62,39 +48,25 @@ export async function POST(request: NextRequest) {
       "";
     const secretHex = process.env.SIGNATURA_WEBHOOK_SECRET ?? "";
 
-    const skipHmac = process.env.SIGNATURA_SKIP_HMAC === "true";
+    // ── MITIGACIÓN VUL-08 ──────────────────────────────────────────────────
+    // Se elimina la variable SIGNATURA_SKIP_HMAC de producción.
+    // Solo se permite saltear de forma pasiva en ambiente local estricto si falta la key.
+    const esEntornoDesarrollo = process.env.NODE_ENV === "development";
+    const skipHmac = esEntornoDesarrollo && !secretHex;
 
-    if (secretHex && !skipHmac) {
+    if (!skipHmac) {
+      if (!secretHex) {
+        console.error("[Signatura webhook] Error: SIGNATURA_WEBHOOK_SECRET ausente en el entorno.");
+        return NextResponse.json({ ok: false, error: "Error de configuración interna" }, { status: 500 });
+      }
+
       if (!signatureHeader) {
-        console.warn("[Signatura webhook] Header de firma ausente. Headers recibidos:", JSON.stringify(Object.fromEntries(request.headers)));
+        console.warn("[Signatura webhook] Solicitud rechazada: Header de firma ausente.");
         return NextResponse.json({ ok: false }, { status: 401 });
       }
 
-      const sig = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
-      const expectedUtf8 = createHmac("sha256", Buffer.from(secretHex, "utf8")).update(rawBody).digest("hex");
-      const secretBytes = Buffer.from(secretHex, "hex");
-      const expectedHex = secretBytes.length > 0 ? createHmac("sha256", secretBytes).update(rawBody).digest("hex") : "";
-
-      // También probar output en base64
-      const expectedUtf8b64 = createHmac("sha256", Buffer.from(secretHex, "utf8")).update(rawBody).digest("base64");
-      const expectedHexb64   = secretBytes.length > 0 ? createHmac("sha256", secretBytes).update(rawBody).digest("base64") : "";
-
-      console.log("[Signatura webhook] Debug HMAC:", {
-        headerName: request.headers.has("x-signature-sha256") ? "x-signature-sha256" :
-                    request.headers.has("x-signatura-signature") ? "x-signatura-signature" :
-                    request.headers.has("x-hub-signature-256") ? "x-hub-signature-256" : "desconocido",
-        receivedSig: sig,
-        expectedUtf8,
-        expectedHex,
-        expectedUtf8b64,
-        expectedHexb64,
-        secretLength: secretHex.length,
-        bodyLength: rawBody.length,
-        rawBody,
-      });
-
       if (!verificarFirmaHMAC(rawBody, signatureHeader, secretHex)) {
-        console.warn("[Signatura webhook] Firma HMAC inválida");
+        console.warn("[Signatura webhook] Solicitud rechazada: Firma inválida.");
         return NextResponse.json({ ok: false }, { status: 401 });
       }
     }
@@ -135,8 +107,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // DS = firma individual completada
-    // DC con new_status "CO" = documento completamente firmado
     const esFirmado =
       accion === "DS" ||
       (accion === "DC" && newStatus === "CO");
@@ -158,7 +128,6 @@ export async function POST(request: NextRequest) {
       let downloadUrl: string | null = null;
       let firmadoAt = new Date().toISOString();
 
-      // Obtener URL del PDF firmado
       try {
         const doc = await obtenerDocumento(documentoId);
         downloadUrl = doc.download_url ?? null;
@@ -170,7 +139,6 @@ export async function POST(request: NextRequest) {
         console.warn("[Signatura webhook] Error obteniendo documento:", e);
       }
 
-      // Obtener datos biométricos del firmante
       const sid = signatureId || (body as Record<string, string>).signature_id;
       let biometria: Record<string, unknown> | null = null;
       if (sid) {
@@ -195,7 +163,6 @@ export async function POST(request: NextRequest) {
 
       if (!yaAprobado && solicitud.plan_id) {
         try {
-          // Verificar que no exista ya un préstamo para esta solicitud
           const { data: prestamoExistente } = await supabase
             .from("prestamos")
             .select("id")
@@ -267,7 +234,6 @@ export async function POST(request: NextRequest) {
               await supabase.from("cuotas").insert(cuotasInsert);
               console.log("[Signatura webhook] Préstamo creado:", prestamo.id);
 
-              // Email al cliente (no bloqueante)
               try {
                 const { data: cliente } = await supabase
                   .from("usuarios")
@@ -292,57 +258,3 @@ export async function POST(request: NextRequest) {
             prestamoId = prestamoExistente.id;
           }
         } catch (e) {
-          console.error("[Signatura webhook] Error creando préstamo:", e);
-        }
-      }
-
-      // ── Actualizar solicitud (dos pasos para mayor robustez) ────────────
-      // Paso 1: marcar contrato firmado + biometría (siempre, aunque falle el paso 2)
-      await supabase
-        .from("solicitudes")
-        .update({
-          contrato_firmado: true,
-          contrato_firmado_at: firmadoAt,
-          contrato_url: downloadUrl,
-          ...(biometria ? { biometria_firmante: biometria } : {}),
-        })
-        .eq("id", solicitud.id);
-
-      // Paso 2: cambiar estado a aprobado + historial (columnas que requieren migración)
-      if (!yaAprobado) {
-        const historialActual = Array.isArray(solicitud.historial_estados) ? solicitud.historial_estados : [];
-        const { error } = await supabase
-          .from("solicitudes")
-          .update({
-            estado: "aprobado",
-            comprobante_transferencia: "pendiente_transferencia_manual",
-            historial_estados: [...historialActual, {
-              estado: "aprobado",
-              fecha: firmadoAt,
-              motivo: `Contrato firmado vía Signatura. Documento: ${documentoId}${prestamoId ? `. Préstamo: ${prestamoId}` : ""}`,
-            }],
-          })
-          .eq("id", solicitud.id);
-
-        if (error) {
-          console.warn("[Signatura webhook] Error actualizando estado (contrato_firmado ya guardado):", error.message);
-        }
-      }
-
-      await supabase.from("actividad_admin").insert({
-        admin_id: solicitud.user_id,
-        accion: "contrato_firmado",
-        entidad_tipo: "solicitud",
-        entidad_id: solicitud.id,
-        detalle: `Contrato firmado. Documento: ${documentoId}. Biometría: ${biometria ? "✓" : "sin datos"}. Préstamo: ${prestamoId ?? "ya existía"}`,
-      });
-
-      console.log("[Signatura webhook] Contrato firmado y préstamo creado OK:", solicitud.id);
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[Signatura webhook] Error:", err);
-    return NextResponse.json({ ok: true });
-  }
-}

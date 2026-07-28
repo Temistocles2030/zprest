@@ -32,7 +32,6 @@ export function useAuth() {
     sessionAnomaly: false,
   });
 
-  // Cache del usuario por ID — evita el flash cuando TOKEN_REFRESHED dispara
   const usuarioCache = useRef<{ id: string; data: Usuario; isAdmin: boolean } | null>(null);
 
   useEffect(() => {
@@ -54,19 +53,16 @@ export function useAuth() {
       return;
     }
 
-    // PRODUCCIÓN — Supabase Auth
     const { createClient } = require("@/lib/supabase/client");
     const supabase = createClient();
 
-    // Timeout de seguridad: si en 8 segundos no resuelve, desbloquear
     const timeout = setTimeout(() => {
-setState(prev => prev.loading
+      setState(prev => prev.loading
         ? { user: null, usuario: null, loading: false, isAdmin: false, sessionAnomaly: false }
         : prev
       );
     }, 8000);
 
-    // onAuthStateChange dispara INITIAL_SESSION al montar — patrón correcto para SSR
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event: string, session: { user: { id: string; email?: string; user_metadata?: Record<string, string> } } | null) => {
         if (session?.user) {
@@ -75,7 +71,6 @@ setState(prev => prev.loading
           const cached = usuarioCache.current;
           const sameUser = cached?.id === session.user.id;
 
-          // Si ya tenemos el usuario cargado para esta sesión, no flashear
           setState({
             user: {
               uid: session.user.id,
@@ -88,7 +83,6 @@ setState(prev => prev.loading
             sessionAnomaly: false,
           });
 
-          // Solo ir a la DB si no tenemos el usuario cacheado
           if (!sameUser) {
             supabase
               .from("usuarios")
@@ -118,11 +112,13 @@ setState(prev => prev.loading
           }
         } else {
           clearTimeout(timeout);
-          // Si había sesión activa y el cierre NO fue intencional → anomalía
+          
+          // ── MITIGACIÓN VUL-10 ──────────────────────────────────────────────────
+          // Si había sesión activa previa y el evento de cierre de sesión NO proviene de una acción voluntaria del usuario:
           if (!intentionalSignOut) {
             setState(prev => {
               if (prev.user) {
-                // Notificar a seguridad en background
+                // 1. Reportamos la anomalía a la API de seguridad
                 fetch("/api/portal/session-anomaly", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -130,7 +126,17 @@ setState(prev => prev.loading
                     email: prev.user.email,
                     dispositivo: navigator.userAgent,
                   }),
-                }).catch(() => {});
+                }).catch((e) => console.error("[Security hook] Error enviando reporte de anomalía:", e));
+
+                // 2. Limpiamos la caché en memoria de forma inmediata
+                usuarioCache.current = null;
+
+                // 3. Forzamos la destrucción de la sesión de Supabase del lado del cliente
+                supabase.auth.signOut().then(() => {
+                  // Redirigimos al usuario a la pantalla de ingreso con una alerta explícita por seguridad
+                  window.location.href = "/login?error=session_anomaly";
+                });
+
                 return { user: null, usuario: null, loading: false, isAdmin: false, sessionAnomaly: true };
               }
               return { user: null, usuario: null, loading: false, isAdmin: false, sessionAnomaly: false };

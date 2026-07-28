@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
-import { verificarSiEsAdmin } from "@/lib/lib/verify-admin"; // Importamos nuestro validador central
+import { verificarSiEsAdmin } from "@/lib/verify-admin";
+ // Importamos nuestro validador central
 
 export async function GET(req: NextRequest) {
   try {

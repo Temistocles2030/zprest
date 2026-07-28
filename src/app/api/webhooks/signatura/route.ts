@@ -7,10 +7,6 @@ import { obtenerDocumento, obtenerBiometria } from "@/lib/signatura/client";
 import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-calculator";
 import { enviarPrestamoAprobado } from "@/lib/resend/emails";
 
-/**
- * Webhook de Signatura Connect - Versión Protegida y Completa
- */
-
 function verificarFirmaHMAC(rawBody: string, signatureHeader: string, secret: string): boolean {
   try {
     const sig = signatureHeader.startsWith("sha256=")
@@ -40,7 +36,6 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
 
-    // Verificación HMAC-SHA256
     const signatureHeader =
       request.headers.get("x-signature-sha256") ??
       request.headers.get("x-signatura-signature") ??
@@ -48,7 +43,6 @@ export async function POST(request: NextRequest) {
       "";
     const secretHex = process.env.SIGNATURA_WEBHOOK_SECRET ?? "";
 
-    // ── MITIGACIÓN VUL-08 ──────────────────────────────────────────────────
     const esEntornoDesarrollo = process.env.NODE_ENV === "development";
     const skipHmac = esEntornoDesarrollo && !secretHex;
 
@@ -88,7 +82,6 @@ export async function POST(request: NextRequest) {
       .eq("signatura_documento_id", documentoId)
       .single();
 
-    // Loguear evento en signatura_eventos
     await supabase.from("signatura_eventos").insert({
       notification_action: accion,
       document_id: documentoId,
@@ -155,7 +148,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // ── Crear préstamo automáticamente si no existe ──────────────────────
       let prestamoId: string | null = null;
       const yaAprobado = ["aprobado", "activo", "completado"].includes(solicitud.estado);
 
@@ -260,4 +252,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // ── Actualizar solicitud (dos pasos para mayor robustez) ────────────
+      await supabase
+        .from("solicitudes")
+        .update({
+          contrato_firmado: true,
+          contrato_firmado_at: firmadoAt,
+          contrato_url: downloadUrl,
+          ...(biometria ? { biometria_firmante: biometria } : {}),
+        })
+        .eq("id", solicitud.id);
+
+      if (!yaAprobado) {

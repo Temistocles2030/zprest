@@ -8,7 +8,8 @@ const PORTAL_PREFIX = "/(portal)";
 const PROTECTED_PATHS = ["/dashboard", "/mis-prestamos", "/solicitar"];
 const ADMIN_PATHS = ["/admin"];
 
-export async function middleware(request: NextRequest) {
+// 👇 AQUÍ ESTÁ EL CAMBIO: Cambiamos 'middleware' por 'proxy'
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // En mock mode no verificamos sesión Supabase

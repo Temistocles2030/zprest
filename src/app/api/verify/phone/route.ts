@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, randomInt } from "crypto"; // VUL-01: Importamos randomInt
 
 const EMAIL_TTL_MS = 10 * 60 * 1000; // 10 minutos
 const SMS_TTL_MS   = 60 * 1000;      // 60 segundos
@@ -9,8 +9,10 @@ function getSecret() {
   return process.env.BIOMETRIC_JWT_SECRET || process.env.CRON_SECRET || "zprest-otp-secret";
 }
 
+// ── MITIGACIÓN VUL-01 ──────────────────────────────────────────────────
+// Reemplazamos Math.random() por randomInt criptográficamente seguro
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 function createToken(userId: string, phone: string, code: string, ttlMs: number): string {
@@ -34,30 +36,39 @@ function verifyToken(token: string): { userId: string; phone: string; code: stri
   }
 }
 
-// Normaliza teléfono argentino a formato local 10 dígitos para SMSMasivos
-// Ej: +54 9 11 1234-5678 → 1112345678
 function toSMSMasivosPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  // Quitar prefijo 54 si empieza con él
   const sin54 = digits.startsWith("54") ? digits.slice(2) : digits;
-  // Quitar el 9 de móviles: 9XXXXXXXXXX → XXXXXXXXXX
   const sin9 = sin54.startsWith("9") ? sin54.slice(1) : sin54;
-  // Quitar 0 inicial si viene como 011...
   return sin9.startsWith("0") ? sin9.slice(1) : sin9;
 }
 
+// ── MITIGACIÓN VUL-03 (ACTUALIZADA) ────────────────────────────────────
+// Usamos HTTPS estricto y enviamos los parámetros ocultos en un POST body (x-www-form-urlencoded)
 async function sendSMS(phone: string, message: string): Promise<void> {
   const apiKey = process.env.SMSMASIVOS_API_KEY;
   if (!apiKey) throw new Error("Servicio SMS no configurado");
 
   const localPhone = toSMSMasivosPhone(phone);
-  const url = new URL("https://servicio.smsmasivos.com.ar/enviar_sms.asp");
-  url.searchParams.set("api", "1");
-  url.searchParams.set("apikey", apiKey);
-  url.searchParams.set("tos", localPhone);
-  url.searchParams.set("texto", message);
+  
+  // URL limpia mediante HTTPS sin parámetros visibles
+  const url = "https://smsmasivos.com.ar";
 
-  const res = await fetch(url.toString());
+  // Ocultamos la API Key inyectándola directamente en el cuerpo codificado del POST
+  const bodyParams = new URLSearchParams();
+  bodyParams.set("api", "1");
+  bodyParams.set("apikey", apiKey);
+  bodyParams.set("tos", localPhone);
+  bodyParams.set("texto", message);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: bodyParams.toString()
+  });
+  
   const text = await res.text();
   console.log("[SMSMasivos] response:", text.trim());
 
@@ -132,13 +143,12 @@ export async function POST(req: Request) {
           await sendSMS(phone, `Zprest: tu codigo de verificacion es ${otp}. Valido por 60 segundos.`);
         } catch (e) {
           console.error("[verify/phone] SMS error:", e instanceof Error ? e.message : e);
-          return NextResponse.json({ error: "No se pudo enviar el SMS. Verificá el número." }, { status: 500 });
+          return NextResponse.json({ error: "No se pudo enviar el SMS. Verificá el número o reintentá más tarde." }, { status: 500 });
         }
 
         return NextResponse.json({ success: true, channel: "sms", ttl: 60, otpToken: smsToken });
       }
 
-      // channel === "email"
       const otp = generateOtp();
       const signedToken = createToken(user.id, phone, otp, EMAIL_TTL_MS);
 
@@ -172,7 +182,6 @@ export async function POST(req: Request) {
       if (data.userId !== user.id) return NextResponse.json({ error: "Token inválido" }, { status: 400 });
       if (data.code !== code.trim()) return NextResponse.json({ error: "Código incorrecto" }, { status: 400 });
 
-      // Marcar teléfono como verificado en DB
       await supabase.from("usuarios").update({
         telefono_verificado: true,
         telefono: data.phone,
@@ -183,8 +192,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: "Acción inválida" }, { status: 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[verify/phone] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // ── MITIGACIÓN VUL-05 ──────────────────────────────────────────────────
+    console.error("[verify/phone] Error crítico interno:", error);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

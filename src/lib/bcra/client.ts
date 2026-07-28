@@ -22,13 +22,15 @@ export interface BCRADeudaResponse {
 
 const BCRA_BASE_URL = "https://api.bcra.gob.ar/centraldedeudores/v1.0";
 
-// BCRA tiene cadena de certificados incompleta (le falta el certificado intermedio).
-// rejectUnauthorized: false es seguro aquí porque solo se aplica a este agente,
-// exclusivamente para api.bcra.gob.ar.
+// ── MITIGACIÓN VUL-04 ──────────────────────────────────────────────────
+// Controlamos explícitamente la validación mediante variable de entorno.
+// Por defecto en producción (si la variable no está seteada como 'true'), se forzará la validación estricta de TLS (true).
+const shouldRejectUnauthorized = process.env.BCRA_INSECURE_TLS !== "true";
+
 const agent = new https.Agent({
   minVersion: "TLSv1.2",
   keepAlive: false,
-  rejectUnauthorized: false,
+  rejectUnauthorized: shouldRejectUnauthorized,
 });
 
 function bcraRequest(path: string): Promise<string> {

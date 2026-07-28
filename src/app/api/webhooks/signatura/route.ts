@@ -49,8 +49,6 @@ export async function POST(request: NextRequest) {
     const secretHex = process.env.SIGNATURA_WEBHOOK_SECRET ?? "";
 
     // ── MITIGACIÓN VUL-08 ──────────────────────────────────────────────────
-    // Se elimina la variable SIGNATURA_SKIP_HMAC de producción.
-    // Solo se permite saltear de forma pasiva en ambiente local estricto si falta la key.
     const esEntornoDesarrollo = process.env.NODE_ENV === "development";
     const skipHmac = esEntornoDesarrollo && !secretHex;
 
@@ -209,7 +207,7 @@ export async function POST(request: NextRequest) {
                 cuotas_total: cantidadCuotas,
                 cuotas_pagadas: 0,
                 proximo_vencimiento: proximoVencimiento.toISOString().split("T")[0],
-,              })
+              })
               .select("id")
               .single();
 
@@ -258,3 +256,8 @@ export async function POST(request: NextRequest) {
             prestamoId = prestamoExistente.id;
           }
         } catch (e) {
+          console.error("[Signatura webhook] Error creando préstamo:", e);
+        }
+      }
+
+      // ── Actualizar solicitud (dos pasos para mayor robustez) ────────────

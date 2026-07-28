@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { verificarSiEsAdmin } from "@/lib/lib/verify-admin"; // Importación de nuestro validador unificado
+import { verificarSiEsAdmin } from "@/lib/verify-admin";
+// Importación de nuestro validador unificado
 
 export async function GET(request: NextRequest) {
   try {

@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
                 cuotas_total: cantidadCuotas,
                 cuotas_pagadas: 0,
                 proximo_vencimiento: proximoVencimiento.toISOString().split("T")[0],
-              })
+,              })
               .select("id")
               .single();
 

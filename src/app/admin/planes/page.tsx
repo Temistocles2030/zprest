@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"; // <-- Ajustá esto si tu import es distinto
+import { createClient } from "@/lib/supabase/client";// <-- Ajustá esto si tu import es distinto
 import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-calculator";
 import type { Plan, TipoPlan, FrecuenciaPlan } from "@/types";
 

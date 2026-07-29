@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"; // <-- Ajustá esto si tu import es distinto
 import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-calculator";
 import type { Plan, TipoPlan, FrecuenciaPlan } from "@/types";
 
@@ -30,6 +31,7 @@ function pesos(n: number) {
 }
 
 export default function PlanesPage() {
+  const supabase = createClientComponentClient(); // <-- Inicializamos Supabase
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(PLAN_VACIO);
@@ -50,11 +52,20 @@ export default function PlanesPage() {
       return;
     }
     try {
-      const res = await fetch("/api/admin/planes");
+      // 1. Obtenemos el token de la sesión activa
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      // 2. Adjuntamos el token a los headers
+      const res = await fetch("/api/admin/planes", {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
       
       if (!res.ok) {
         console.error(`Error en la API de planes: ${res.status}`);
-        setPlanes([]); // Mantiene un array vacío para que .filter() no falle
+        setPlanes([]); 
         showToast("Error de autenticación o sesión expirada", false);
         return;
       }
@@ -101,17 +112,26 @@ export default function PlanesPage() {
         showToast(editId ? "Plan actualizado" : "Plan creado");
         return;
       }
+
+      // Obtenemos el token para la mutación
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const headers = { 
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+
       if (editId) {
         const res = await fetch(`/api/admin/planes/${editId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Error al actualizar");
       } else {
         const res = await fetch("/api/admin/planes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Error al crear");
@@ -151,7 +171,16 @@ export default function PlanesPage() {
       setPlanes((prev) => prev.filter((p) => p.id !== id));
       return;
     }
-    await fetch(`/api/admin/planes/${id}`, { method: "DELETE" });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    await fetch(`/api/admin/planes/${id}`, { 
+      method: "DELETE",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
     await cargar();
     showToast("Plan eliminado", false);
   };
@@ -162,9 +191,16 @@ export default function PlanesPage() {
       setPlanes((prev) => prev.map((p) => p.id === plan.id ? { ...p, activo: newActivo } : p));
       return;
     }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
     await fetch(`/api/admin/planes/${plan.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ activo: newActivo }),
     });
     await cargar();

@@ -31,7 +31,7 @@ function pesos(n: number) {
 }
 
 export default function PlanesPage() {
-  const supabase = createClientComponentClient(); // <-- Inicializamos Supabase
+  const supabase = createClient(); // <-- Inicializamos Supabase// <-- Inicializamos Supabase
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(PLAN_VACIO);

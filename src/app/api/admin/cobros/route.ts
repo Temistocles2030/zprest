@@ -1,20 +1,30 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
-import { verificarSiEsAdmin } from "@/lib/verify-admin";
-// Importación de nuestro validador unificado
+import { createServerClient, createAdminClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // ── MITIGACIÓN VUL-09 ──────────────────────────────────────────────────
-    // Centralizamos la verificación de identidad y rol admin mediante el helper unificado
-    const tokenHeader = request.headers.get("Authorization");
-    const auth = await verificarSiEsAdmin(tokenHeader);
-    if (!auth.esAdmin) {
-      return NextResponse.json({ error: "No autorizado o acceso denegado" }, { status: 401 });
+    // 1. Verificamos la sesión actual usando cookies (magia unificada)
+    const supabaseAuth = await createServerClient();
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    // 2. Verificamos que el usuario tenga rol de admin en la base de datos
+    const { data: usuario } = await supabaseAuth
+      .from("usuarios")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (usuario?.role !== "admin") {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+    }
+
+    // 3. Si es admin, creamos el cliente con superpoderes para buscar los datos
     const supabase = createAdminClient();
 
     // Obtener IDs de préstamos activos (no eliminados)
@@ -43,10 +53,7 @@ export async function GET(request: NextRequest) {
       .limit(500);
 
     if (error) {
-      // ── MITIGACIÓN VUL-05 ──────────────────────────────────────────────────
-      // Registramos de forma privada el error.message real en la consola del servidor
       console.error("[admin/cobros] DB Cuotas Error:", error.message);
-      // Respondemos al exterior con un string completamente opaco y genérico
       return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
 
@@ -90,7 +97,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ cuotas: cuotasEnriquecidas });
 
   } catch (err) {
-    // ── MITIGACIÓN VUL-05 ──────────────────────────────────────────────────
     console.error("[admin/cobros] Error fatal crítico detectado:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }

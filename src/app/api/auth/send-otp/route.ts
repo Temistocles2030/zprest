@@ -101,6 +101,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     // ── MITIGACIÓN VUL-05 ──────────────────────────────────────────────────
     console.error("[send-otp] Error crítico interno:", error);
-    return NextResponse.json({ ok: false, error: "Error interno del servidor" }, { status: 500 });
+  return NextResponse.json({ ok: true });
   }
 }

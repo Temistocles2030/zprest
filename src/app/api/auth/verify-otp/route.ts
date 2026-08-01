@@ -76,19 +76,25 @@ export async function POST(req: NextRequest) {
   // admin-otp, reset y registro: solo verificar OTP, el frontend maneja el siguiente paso
   if (tipo === "admin-otp" || tipo === "reset" || tipo === "registro") {
     
-    // 👇 ESTA ES LA MAGIA QUE FALTABA 👇
+    // 👇 GENERACIÓN CORRECTA DEL TOKEN DE SEGURIDAD 👇
     if (tipo === "reset") {
       const payloadObj = {
         email: email.trim(),
         code: code.trim(),
         exp: Date.now() + 15 * 60 * 1000 // Token válido por 15 minutos
       };
-      // Crear token firmado igual que lo espera reset-password
-      const payload = Buffer.from(JSON.stringify(payloadObj)).toString("base64url");
-      const sig = createHmac("sha256", getSecret()).update(payload).digest("hex");
-      const otpToken = `${payload}.${sig}`;
+      
+      // 1. Convertimos los datos a texto (JSON)
+      const jsonText = JSON.stringify(payloadObj);
+      
+      // 2. Firmamos el texto plano (exactamente como lo espera el reset)
+      const sig = createHmac("sha256", getSecret()).update(jsonText).digest("hex");
+      
+      // 3. Convertimos el JSON a base64url para juntarlo con la firma
+      const payloadB64 = Buffer.from(jsonText).toString("base64url");
+      const otpToken = `${payloadB64}.${sig}`;
 
-      // Devolvemos el ok y el TOKEN
+      // Devolvemos el ok y el TOKEN listo para usarse
       return NextResponse.json({ ok: true, otpToken });
     }
 

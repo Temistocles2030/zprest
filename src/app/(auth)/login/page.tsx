@@ -410,7 +410,8 @@ function LoginContent() {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: regData.email, tipo: "registro" }),
+        // 👇 CAMBIO 1: Agregamos telefono aquí 👇
+        body: JSON.stringify({ email: regData.email, telefono: regData.telefono, tipo: "registro" }),
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error ?? "Error al enviar código");
@@ -935,7 +936,8 @@ function LoginContent() {
               fetch("/api/auth/send-otp", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: regData.email, tipo: "registro" })
+                // 👇 CAMBIO 2: Agregamos telefono al contador de reenvío 👇
+                body: JSON.stringify({ email: regData.email, telefono: regData.telefono, tipo: "registro" })
               }).finally(() => setOtpKey((k) => k + 1));
             }}
           />
@@ -947,7 +949,8 @@ function LoginContent() {
                 fetch("/api/auth/send-otp", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email: regData.email, tipo: "registro" })
+                  // 👇 CAMBIO 3: Agregamos telefono al botón manual de reenvío 👇
+                  body: JSON.stringify({ email: regData.email, telefono: regData.telefono, tipo: "registro" })
                 }).finally(() => {
                   setOtpKey((k) => k + 1);
                   setLoading(false);
@@ -1190,5 +1193,9 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-     
-   
+
+    
+    
+    
+        
+           

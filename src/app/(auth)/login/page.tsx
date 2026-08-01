@@ -158,8 +158,11 @@ function LoginContent() {
   const [otpKey, setOtpKey] = useState(0);
   const [resetEmail, setResetEmail] = useState("");
   const [resetOtpVerificado, setResetOtpVerificado] = useState(false);
-  // 👇 CAMBIO 1: Agregamos el estado para guardar el código OTP 👇
+  
+  // 👇 ACÁ ESTÁN LOS DOS ESTADOS NECESARIOS 👇
   const [resetOtpCode, setResetOtpCode] = useState(""); 
+  const [resetOtpToken, setResetOtpToken] = useState(""); 
+  
   const [nuevaPassword, setNuevaPassword] = useState("");
   const [nuevaPasswordConfirm, setNuevaPasswordConfirm] = useState("");
 
@@ -494,6 +497,11 @@ function LoginContent() {
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error ?? "Error al enviar código");
+      
+      // 👇 GUARDAMOS EL TOKEN CUANDO SE ENVÍA EL CÓDIGO 👇
+      if (data.otpToken) setResetOtpToken(data.otpToken);
+      if (data.token) setResetOtpToken(data.token);
+
       setOtpKey((k) => k + 1);
       setView("reset-otp");
     } catch (e: unknown) {
@@ -522,8 +530,12 @@ function LoginContent() {
       }
 
       setResetOtpVerificado(true);
-      // 👇 CAMBIO 2: Guardamos el OTP validado en el estado 👇
       setResetOtpCode(code);
+      
+      // 👇 POR LAS DUDAS, TAMBIÉN LO GUARDAMOS AL VERIFICAR 👇
+      if (data.otpToken) setResetOtpToken(data.otpToken);
+      if (data.token) setResetOtpToken(data.token);
+
       setView("reset-nueva");
     } catch {
       setOtpError("Error al verificar. Intentá de nuevo.");
@@ -562,11 +574,12 @@ function LoginContent() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 👇 CAMBIO 3: Cambiamos a 'password' y enviamos el 'otp' guardado 👇
+        // 👇 ESTE ES EL CAMBIO FINAL Y EL MÁS IMPORTANTE 👇
         body: JSON.stringify({ 
           email: resetEmail, 
-          password: nuevaPassword, 
-          otp: resetOtpCode 
+          nuevaPassword: nuevaPassword, 
+          code: resetOtpCode,
+          otpToken: resetOtpToken
         }),
       });
 
@@ -1177,3 +1190,5 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+     
+   

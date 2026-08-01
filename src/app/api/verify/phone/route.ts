@@ -51,8 +51,8 @@ async function sendSMS(phone: string, message: string): Promise<void> {
 
   const localPhone = toSMSMasivosPhone(phone);
   
-  // URL limpia mediante HTTPS sin parámetros visibles
-  const url = "https://smsmasivos.com.ar";
+  // URL de API corregida mediante HTTPS sin parámetros visibles
+  const url = "https://servicio.smsmasivos.com.ar/enviar_sms.asp";
 
   // Ocultamos la API Key inyectándola directamente en el cuerpo codificado del POST
   const bodyParams = new URLSearchParams();

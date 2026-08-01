@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { createHmac } from "crypto";
 
 const MAX_INTENTOS = 5;
 const VENTANA_BLOQUEO_MIN = 30;
+
+function getSecret() {
+  return process.env.BIOMETRIC_JWT_SECRET || process.env.CRON_SECRET || "zprest-otp-secret";
+}
 
 export async function POST(req: NextRequest) {
   const { email, code, tipo } = await req.json();
@@ -70,6 +75,23 @@ export async function POST(req: NextRequest) {
 
   // admin-otp, reset y registro: solo verificar OTP, el frontend maneja el siguiente paso
   if (tipo === "admin-otp" || tipo === "reset" || tipo === "registro") {
+    
+    // 👇 ESTA ES LA MAGIA QUE FALTABA 👇
+    if (tipo === "reset") {
+      const payloadObj = {
+        email: email.trim(),
+        code: code.trim(),
+        exp: Date.now() + 15 * 60 * 1000 // Token válido por 15 minutos
+      };
+      // Crear token firmado igual que lo espera reset-password
+      const payload = Buffer.from(JSON.stringify(payloadObj)).toString("base64url");
+      const sig = createHmac("sha256", getSecret()).update(payload).digest("hex");
+      const otpToken = `${payload}.${sig}`;
+
+      // Devolvemos el ok y el TOKEN
+      return NextResponse.json({ ok: true, otpToken });
+    }
+
     return NextResponse.json({ ok: true });
   }
 

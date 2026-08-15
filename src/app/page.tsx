@@ -3,10 +3,8 @@ import Link from "next/link";
 import HeroSection from "@/components/landing/HeroSection";
 import LandingNav from "@/components/landing/LandingNav";
 import ZiroChat from "@/components/landing/ZiroChat";
-import PandaPosnetCard from "@/components/landing/PandaPosnetCard";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { PlanSimulador } from "@/types";
-
 
 export const revalidate = 60;
 
@@ -179,7 +177,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-4xl mx-auto">
             {SERVICIOS.map((s) => (
               <div
                 key={s.titulo}
@@ -218,9 +216,6 @@ export default async function HomePage() {
                 </Link>
               </div>
             ))}
-
-            {/* Panda Posnet */}
-            <PandaPosnetCard />
           </div>
         </div>
       </section>
@@ -391,3 +386,4 @@ export default async function HomePage() {
     </div>
   );
 }
+  

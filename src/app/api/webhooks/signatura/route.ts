@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 
+// IMPORTAMOS LAS FUNCIONES OFICIALES DE CÁLCULO
+import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-calculator";
+
 function verificarFirmaHMAC(rawBody: string, signatureHeader: string, secret: string): boolean {
   try {
     const sig = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
@@ -99,7 +102,33 @@ export async function POST(request: NextRequest) {
           .eq("id", solicitud.id);
       }
 
-      // 2. Verificar si el préstamo ya existe en la tabla de préstamos para evitar duplicados
+      // Traer los datos del plan para usar sus tasas
+      const { data: plan } = await supabase
+        .from("planes")
+        .select("*")
+        .eq("id", solicitud.plan_id)
+        .single();
+
+      if (!plan) {
+        console.error("[Signatura webhook] Plan no encontrado para el cálculo de cuotas.");
+        return NextResponse.json({ ok: false, error: "Plan no encontrado" }, { status: 400 });
+      }
+
+      const cuotasTotal = Number(solicitud.cuotas) || 1;
+      const montoCapital = Number(solicitud.monto);
+      
+      // CALCULAR LA CUOTA EXACTA CON TU FUNCIÓN
+      let montoCuota = 0;
+      if (plan.tipo === "personal") {
+         montoCuota = calcularCuotaPersonal(montoCapital, plan.tem, cuotasTotal);
+      } else if (plan.tipo === "pyme") {
+         montoCuota = calcularCuotaDiariaComercial(montoCapital, plan.ted, cuotasTotal);
+      } else {
+         // Fallback por si hay otro tipo
+         montoCuota = Math.round(montoCapital / cuotasTotal);
+      }
+
+      // 2. Verificar si el préstamo ya existe
       const { data: prestamoExistente } = await supabase
         .from("prestamos")
         .select("id")
@@ -108,22 +137,18 @@ export async function POST(request: NextRequest) {
 
       let prestamoId = prestamoExistente?.id;
 
-      // Cálculos necesarios para cumplir con tu esquema de base de datos
-      const cuotasTotal = Number(solicitud.cuotas) || 1;
-      const montoCuota = Math.round(Number(solicitud.monto) / cuotasTotal);
-
       if (!prestamoExistente) {
-        // 3. Crear el registro en la tabla de préstamos con los campos EXACTOS de tu schema
+        // 3. Crear el registro en la tabla de préstamos
         const { data: nuevoPrestamo, error: errorPrestamo } = await supabase
           .from("prestamos")
           .insert({
             solicitud_id: solicitud.id,
             user_id: solicitud.user_id,
-            plan_id: solicitud.plan_id,            // Obligatorio en tu schema
-            capital_original: solicitud.monto,     // Reemplaza al 'monto' anterior
-            saldo_remanente: solicitud.monto,      // Obligatorio en tu schema
-            cuotas_monto: montoCuota,              // Obligatorio en tu schema
-            cuotas_total: cuotasTotal              // Reemplaza al 'cuotas' anterior
+            plan_id: solicitud.plan_id,
+            capital_original: montoCapital,
+            saldo_remanente: montoCapital,
+            cuotas_monto: montoCuota,
+            cuotas_total: cuotasTotal
           })
           .select("id")
           .single();
@@ -135,7 +160,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 4. Generar las cuotas automáticamente si el préstamo está disponible
+      // 4. Generar las cuotas automáticamente
       if (prestamoId) {
         const { count: cuotasCount } = await supabase
           .from("cuotas")
@@ -155,7 +180,7 @@ export async function POST(request: NextRequest) {
 
             cuotasARegistrar.push({
               prestamo_id: prestamoId,
-              user_id: solicitud.user_id, // ¡Faltaba este campo obligatorio!
+              user_id: solicitud.user_id,
               numero_cuota: i,
               monto: montoCuota,
               fecha_vencimiento: fechaActual.toISOString().split("T")[0],

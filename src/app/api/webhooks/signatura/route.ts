@@ -114,7 +114,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: "Plan no encontrado" }, { status: 400 });
       }
 
-      const cuotasTotal = Number(solicitud.cuotas) || 1;
+      // NUEVO: Ajuste inteligente de la cantidad de cuotas.
+      // Si es PYME o diario, tomamos el plazo (ej: 60), sino las cuotas.
+      const esDiarioOPyme = plan.tipo === "pyme" || plan.frecuencia === "diario";
+      const cuotasTotal = esDiarioOPyme ? Number(solicitud.plazo) || 1 : Number(solicitud.cuotas) || 1;
+      
       const montoCapital = Number(solicitud.monto);
       
       // CALCULAR LA CUOTA EXACTA CON TU FUNCIÓN
@@ -124,11 +128,10 @@ export async function POST(request: NextRequest) {
       } else if (plan.tipo === "pyme") {
          montoCuota = calcularCuotaDiariaComercial(montoCapital, plan.ted, cuotasTotal);
       } else {
-         // Fallback por si hay otro tipo
          montoCuota = Math.round(montoCapital / cuotasTotal);
       }
 
-      // NUEVO: Calcular el saldo total real (capital + todos los intereses e impuestos)
+      // Calcular el saldo total real (capital + todos los intereses e impuestos de TODAS las cuotas)
       const saldoTotalAPagar = montoCuota * cuotasTotal;
 
       // 2. Verificar si el préstamo ya existe
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
             user_id: solicitud.user_id,
             plan_id: solicitud.plan_id,
             capital_original: montoCapital,
-            saldo_remanente: saldoTotalAPagar, // <-- ACÁ CAMBIAMOS PARA QUE REFLEJE LA DEUDA TOTAL
+            saldo_remanente: saldoTotalAPagar,
             cuotas_monto: montoCuota,
             cuotas_total: cuotasTotal
           })
@@ -175,10 +178,19 @@ export async function POST(request: NextRequest) {
           let fechaActual = new Date();
 
           for (let i = 1; i <= cuotasTotal; i++) {
-            fechaActual.setDate(fechaActual.getDate() + 1);
-            if (fechaActual.getDay() === 0) {
-              // Salto de domingos
+            
+            // NUEVO: Avanzar las fechas dependiendo del plan (diario, quincenal, mensual)
+            if (plan.frecuencia === "mensual") {
+              fechaActual.setMonth(fechaActual.getMonth() + 1);
+            } else if (plan.frecuencia === "quincenal") {
+              fechaActual.setDate(fechaActual.getDate() + 15);
+            } else {
+              // Diario por defecto
               fechaActual.setDate(fechaActual.getDate() + 1);
+              if (fechaActual.getDay() === 0) {
+                // Salto de domingos
+                fechaActual.setDate(fechaActual.getDate() + 1);
+              }
             }
 
             cuotasARegistrar.push({

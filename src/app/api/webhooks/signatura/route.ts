@@ -128,6 +128,9 @@ export async function POST(request: NextRequest) {
          montoCuota = Math.round(montoCapital / cuotasTotal);
       }
 
+      // NUEVO: Calcular el saldo total real (capital + todos los intereses e impuestos)
+      const saldoTotalAPagar = montoCuota * cuotasTotal;
+
       // 2. Verificar si el préstamo ya existe
       const { data: prestamoExistente } = await supabase
         .from("prestamos")
@@ -146,7 +149,7 @@ export async function POST(request: NextRequest) {
             user_id: solicitud.user_id,
             plan_id: solicitud.plan_id,
             capital_original: montoCapital,
-            saldo_remanente: montoCapital,
+            saldo_remanente: saldoTotalAPagar, // <-- ACÁ CAMBIAMOS PARA QUE REFLEJE LA DEUDA TOTAL
             cuotas_monto: montoCuota,
             cuotas_total: cuotasTotal
           })

@@ -108,17 +108,22 @@ export async function POST(request: NextRequest) {
 
       let prestamoId = prestamoExistente?.id;
 
+      // Cálculos necesarios para cumplir con tu esquema de base de datos
+      const cuotasTotal = Number(solicitud.cuotas) || 1;
+      const montoCuota = Math.round(Number(solicitud.monto) / cuotasTotal);
+
       if (!prestamoExistente) {
-        // 3. Crear el registro en la tabla de préstamos al confirmarse la firma
+        // 3. Crear el registro en la tabla de préstamos con los campos EXACTOS de tu schema
         const { data: nuevoPrestamo, error: errorPrestamo } = await supabase
           .from("prestamos")
           .insert({
             solicitud_id: solicitud.id,
             user_id: solicitud.user_id,
-            monto: solicitud.monto,
-            cuotas: solicitud.cuotas,
-            estado: "activo",
-            created_at: new Date().toISOString(),
+            plan_id: solicitud.plan_id,            // Obligatorio en tu schema
+            capital_original: solicitud.monto,     // Reemplaza al 'monto' anterior
+            saldo_remanente: solicitud.monto,      // Obligatorio en tu schema
+            cuotas_monto: montoCuota,              // Obligatorio en tu schema
+            cuotas_total: cuotasTotal              // Reemplaza al 'cuotas' anterior
           })
           .select("id")
           .single();
@@ -139,12 +144,9 @@ export async function POST(request: NextRequest) {
 
         if (!cuotasCount || cuotasCount === 0) {
           const cuotasARegistrar = [];
-          const totalCuotas = Number(solicitud.cuotas) || 1;
-          const montoPorCuota = Number(solicitud.monto) / totalCuotas;
-
           let fechaActual = new Date();
 
-          for (let i = 1; i <= totalCuotas; i++) {
+          for (let i = 1; i <= cuotasTotal; i++) {
             fechaActual.setDate(fechaActual.getDate() + 1);
             if (fechaActual.getDay() === 0) {
               // Salto de domingos
@@ -153,8 +155,9 @@ export async function POST(request: NextRequest) {
 
             cuotasARegistrar.push({
               prestamo_id: prestamoId,
+              user_id: solicitud.user_id, // ¡Faltaba este campo obligatorio!
               numero_cuota: i,
-              monto: montoPorCuota,
+              monto: montoCuota,
               fecha_vencimiento: fechaActual.toISOString().split("T")[0],
               estado: "pendiente",
             });

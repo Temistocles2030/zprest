@@ -106,19 +106,67 @@ export async function POST(request: NextRequest) {
         .eq("solicitud_id", solicitud.id)
         .maybeSingle();
 
+      let prestamoId = prestamoExistente?.id;
+
       if (!prestamoExistente) {
         // 3. Crear el registro en la tabla de préstamos al confirmarse la firma
-        const { error: errorPrestamo } = await supabase.from("prestamos").insert({
-          solicitud_id: solicitud.id,
-          user_id: solicitud.user_id,
-          monto: solicitud.monto,
-          cuotas: solicitud.cuotas,
-          estado: "activo",
-          created_at: new Date().toISOString(),
-        });
+        const { data: nuevoPrestamo, error: errorPrestamo } = await supabase
+          .from("prestamos")
+          .insert({
+            solicitud_id: solicitud.id,
+            user_id: solicitud.user_id,
+            monto: solicitud.monto,
+            cuotas: solicitud.cuotas,
+            estado: "activo",
+            created_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
 
         if (errorPrestamo) {
           console.error("[Signatura webhook] Error al insertar el préstamo:", errorPrestamo);
+        } else {
+          prestamoId = nuevoPrestamo?.id;
+        }
+      }
+
+      // 4. Generar las cuotas automáticamente si el préstamo está disponible
+      if (prestamoId) {
+        const { count: cuotasCount } = await supabase
+          .from("cuotas")
+          .select("*", { count: "exact", head: true })
+          .eq("prestamo_id", prestamoId);
+
+        if (!cuotasCount || cuotasCount === 0) {
+          const cuotasARegistrar = [];
+          const totalCuotas = Number(solicitud.cuotas) || 1;
+          const montoPorCuota = Number(solicitud.monto) / totalCuotas;
+
+          let fechaActual = new Date();
+
+          for (let i = 1; i <= totalCuotas; i++) {
+            fechaActual.setDate(fechaActual.getDate() + 1);
+            if (fechaActual.getDay() === 0) {
+              // Salto de domingos
+              fechaActual.setDate(fechaActual.getDate() + 1);
+            }
+
+            cuotasARegistrar.push({
+              prestamo_id: prestamoId,
+              numero_cuota: i,
+              monto: montoPorCuota,
+              fecha_vencimiento: fechaActual.toISOString().split("T")[0],
+              estado: "pendiente",
+            });
+          }
+
+          const { error: errorCuotas } = await supabase
+            .from("cuotas")
+            .insert(cuotasARegistrar);
+
+          if (errorCuotas) {
+            console.error("[Signatura webhook] Error al generar las cuotas:", errorCuotas);
+          }
         }
       }
     }

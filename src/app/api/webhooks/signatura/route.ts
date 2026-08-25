@@ -114,24 +114,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: "Plan no encontrado" }, { status: 400 });
       }
 
-      // NUEVO: Ajuste inteligente de la cantidad de cuotas.
-      // Si es PYME o diario, tomamos el plazo (ej: 60), sino las cuotas.
-      const esDiarioOPyme = plan.tipo === "pyme" || plan.frecuencia === "diario";
-      const cuotasTotal = esDiarioOPyme ? Number(solicitud.plazo) || 1 : Number(solicitud.cuotas) || 1;
+      // NUEVO: Regla a prueba de balas para detectar planes diarios/pymes
+      const esDiarioOPyme = 
+        String(plan.tipo).toLowerCase().includes("pyme") || 
+        String(plan.tipo).toLowerCase().includes("comercial") || 
+        String(plan.frecuencia).toLowerCase().includes("diari");
+
+      const cuotasTotal = esDiarioOPyme ? (Number(solicitud.plazo) || 1) : (Number(solicitud.cuotas) || 1);
       
       const montoCapital = Number(solicitud.monto);
       
       // CALCULAR LA CUOTA EXACTA CON TU FUNCIÓN
       let montoCuota = 0;
-      if (plan.tipo === "personal") {
+      if (String(plan.tipo).toLowerCase().includes("personal")) {
          montoCuota = calcularCuotaPersonal(montoCapital, plan.tem, cuotasTotal);
-      } else if (plan.tipo === "pyme") {
+      } else if (esDiarioOPyme) {
          montoCuota = calcularCuotaDiariaComercial(montoCapital, plan.ted, cuotasTotal);
       } else {
          montoCuota = Math.round(montoCapital / cuotasTotal);
       }
 
-      // Calcular el saldo total real (capital + todos los intereses e impuestos de TODAS las cuotas)
+      // Calcular el saldo total real
       const saldoTotalAPagar = montoCuota * cuotasTotal;
 
       // 2. Verificar si el préstamo ya existe
@@ -179,10 +182,11 @@ export async function POST(request: NextRequest) {
 
           for (let i = 1; i <= cuotasTotal; i++) {
             
-            // NUEVO: Avanzar las fechas dependiendo del plan (diario, quincenal, mensual)
-            if (plan.frecuencia === "mensual") {
+            // Avanzar las fechas dependiendo de la frecuencia
+            const freq = String(plan.frecuencia).toLowerCase();
+            if (freq.includes("mensual")) {
               fechaActual.setMonth(fechaActual.getMonth() + 1);
-            } else if (plan.frecuencia === "quincenal") {
+            } else if (freq.includes("quincenal")) {
               fechaActual.setDate(fechaActual.getDate() + 15);
             } else {
               // Diario por defecto

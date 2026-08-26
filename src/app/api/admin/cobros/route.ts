@@ -1,20 +1,25 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Verificamos la sesión actual usando cookies (magia unificada)
-    const supabaseAuth = await createServerClient();
-    const { data: { user } } = await supabaseAuth.auth.getUser();
+    const supabase = createAdminClient();
 
-    if (!user) {
+    // 1. Verificamos la sesión actual usando el Bearer token (consistente con /pagos, /finalizados, /prestamos)
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     // 2. Verificamos que el usuario tenga rol de admin en la base de datos
-    const { data: usuario } = await supabaseAuth
+    const { data: usuario } = await supabase
       .from("usuarios")
       .select("role")
       .eq("id", user.id)
@@ -23,9 +28,6 @@ export async function GET(request: NextRequest) {
     if (usuario?.role !== "admin") {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
     }
-
-    // 3. Si es admin, creamos el cliente con superpoderes para buscar los datos
-    const supabase = createAdminClient();
 
     // Obtener IDs de préstamos activos (no eliminados)
     const { data: prestamosActivos, error: activeErr } = await supabase

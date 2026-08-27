@@ -7,6 +7,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 // IMPORTAMOS LAS FUNCIONES OFICIALES DE CÁLCULO
 import { calcularCuotaPersonal, calcularCuotaDiariaComercial } from "@/lib/loan-calculator";
 
+// actividad_admin.admin_id es NOT NULL — no existe un "usuario sistema", así que los
+// eventos generados automáticamente por este webhook quedan asociados a este admin
+// (accion siempre empieza con "error_", así que se distinguen de acciones manuales).
+const SYSTEM_ADMIN_ID = "4dc6d2fb-df5a-4878-a49d-92a5474aff3d"; // marianoaliandri@gmail.com
+
 function verificarFirmaHMAC(rawBody: string, signatureHeader: string, secret: string): boolean {
   try {
     const sig = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
@@ -164,6 +169,15 @@ export async function POST(request: NextRequest) {
 
         if (errorPrestamo) {
           console.error("[Signatura webhook] Error al insertar el préstamo:", errorPrestamo);
+          await supabase.from("actividad_admin").insert({
+            admin_id: SYSTEM_ADMIN_ID,
+            accion: "error_creacion_prestamo",
+            entidad_tipo: "solicitud",
+            entidad_id: solicitud.id,
+            detalle: { error: errorPrestamo.message, solicitud_id: solicitud.id },
+          });
+          // Respondemos error para que Signatura reintente el webhook más tarde
+          return NextResponse.json({ ok: false, error: "Error al crear el préstamo" }, { status: 500 });
         } else {
           prestamoId = nuevoPrestamo?.id;
         }
@@ -213,6 +227,17 @@ export async function POST(request: NextRequest) {
 
           if (errorCuotas) {
             console.error("[Signatura webhook] Error al generar las cuotas:", errorCuotas);
+            await supabase.from("actividad_admin").insert({
+              admin_id: SYSTEM_ADMIN_ID,
+              accion: "error_generacion_cuotas",
+              entidad_tipo: "prestamo",
+              entidad_id: prestamoId,
+              detalle: { error: errorCuotas.message, solicitud_id: solicitud.id, cuotas_esperadas: cuotasTotal },
+            });
+            // Respondemos error para que Signatura reintente el webhook más tarde.
+            // Es seguro: prestamoExistente evita duplicar el préstamo, y cuotasCount === 0
+            // vuelve a intentar generar las cuotas en el próximo intento.
+            return NextResponse.json({ ok: false, error: "Error al generar las cuotas" }, { status: 500 });
           }
         }
       }

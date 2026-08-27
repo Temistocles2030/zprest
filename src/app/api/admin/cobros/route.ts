@@ -46,13 +46,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ cuotas: [] });
     }
 
-    // Fetch cuotas sin joins
+    // Fetch cuotas sin joins (incluye pagadas: se usan en la pestaña Historial)
     const { data: cuotas, error } = await supabase
       .from("cuotas")
       .select("*")
       .in("prestamo_id", prestamoIdsActivos)
       .order("fecha_vencimiento", { ascending: true })
-      .limit(500);
+      .limit(2000);
 
     if (error) {
       console.error("[admin/cobros] DB Cuotas Error:", error.message);

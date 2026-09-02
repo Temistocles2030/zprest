@@ -376,6 +376,12 @@ export default async function HomePage() {
 
           <div className="flex flex-col items-center justify-between gap-3 pt-6 text-xs text-blue-300/40 sm:flex-row">
             <p>© {new Date().getFullYear()} Zprest. Todos los derechos reservados.</p>
+            <p>
+              Sitio desarrollado por{" "}
+              <a href="https://marianoaliandri.com.ar/" target="_blank" rel="noopener" className="hover:text-blue-300/70 transition-colors">
+                marianoaliandri.com.ar
+              </a>
+            </p>
             <p>zprest.com.ar</p>
           </div>
         </div>
